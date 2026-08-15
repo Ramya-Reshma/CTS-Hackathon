@@ -6,17 +6,26 @@ import pandas as pd
 import feature_engineering as fe
 import isolation_forest as isf
 import correlation_analysis as ca
+import statistical_detection as sd
+import data_quality as dq
 
 def main():
+    # Default input file in Data/ if none provided
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    default_input = os.path.join(repo_root, "Data", "claims_pharmacy_auth_monitor_dataset_final.xlsx")
+
     if len(sys.argv) < 2:
-        print("Usage: python main.py <input.csv>")
-        sys.exit(1)
-        
-    input_file = sys.argv[1]
-    
+        input_file = default_input
+        print(f"No input provided. Using default: {input_file}")
+    else:
+        input_file = sys.argv[1]
+
+    # Load the input dataset (support CSV and Excel)
     try:
-        # Load the input dataset
-        df = pd.read_csv(input_file)
+        if input_file.lower().endswith(('.xls', '.xlsx')):
+            df = pd.read_excel(input_file)
+        else:
+            df = pd.read_csv(input_file)
     except Exception as e:
         print(f"Error reading {input_file}: {e}")
         sys.exit(1)
@@ -24,14 +33,34 @@ def main():
     # 1. Feature Engineering
     # This prepares the data (e.g. creating Provider_NPI_Frequency, missing checks, etc.)
     df = fe.run_feature_engineering(df)
-    
-    # 2. Isolation Forest (Machine Learning Anomaly Detection)
+
+    # 2. Statistical Detection (Z-score + IQR)
+    df = sd.run_statistical_detection(df)
+
+    # 3. Isolation Forest (Machine Learning Anomaly Detection)
     # Computes ISO_Is_Anomaly, ISO_Raw_Score, ISO_Severity_0to1
     df = isf.run_isolation_forest(df)
-    
-    # 3. Correlation Analysis
+
+    # 4. Correlation Analysis
     # Computes Correlation_Anomaly and Quantity_Supply_Anomaly
     df = ca.run_correlation_analysis(df)
+
+    # 5. Data Quality checks (profiles, rule engine, scoring)
+    try:
+        profile = dq.generate_profile(df, output_path="outputs/data_profile.json")
+        rule_results = dq.run_quality_checks(df, dq.RULES)
+        quality_report = dq.calculate_scores_and_risk(rule_results, df, output_dir="outputs")
+    except Exception as e:
+        import traceback
+        print("Data quality step failed:")
+        traceback.print_exc()
+
+    # 6. SLA / classification (run sla_monitoring after data-quality outputs are written)
+    try:
+        import importlib
+        sla = importlib.import_module("sla_monitoring")
+    except Exception as e:
+        print(f"SLA classification step skipped: {e}")
     
     # Extract the requested output JSON format for each record
     results = []
@@ -67,11 +96,14 @@ def main():
         }
         results.append(result)
     
-    # Write to a JSON file or print to stdout
-    output_path = "final_anomaly_report.json"
+    # Write to a JSON file under `log/final_anomaly_report.json` (required by RCA agent)
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    log_dir = os.path.join(repo_root, "log")
+    os.makedirs(log_dir, exist_ok=True)
+    output_path = os.path.join(log_dir, "final_anomaly_report.json")
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
-        
+
     print(f"\nPipeline complete! Output written to {output_path}")
     print(f"Total Records processed: {len(results)}")
     

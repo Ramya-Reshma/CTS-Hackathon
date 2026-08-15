@@ -1,0 +1,24 @@
+{
+  "incident_id": "PH201432",
+  "record_type": "PHARMACY_CLAIM",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "statistical: {'zscore': False, 'iqr': False}"
+  ],
+  "observed_facts": [
+    "isolation_forest: {'is_anomaly': True, 'raw_score': -0.14466701096706058, 'severity_0to1': 1.0}",
+    "correlation: {'anomaly': False, 'residual': -6.8379620913456165, 'quantity_supply_residual': -2.739367041676701}",
+    "ml_signal_count: 1"
+  ],
+  "possible_causes": [
+    "Isolation forest algorithm detected an anomaly due to abnormal feature scores",
+    "Correlation analysis suggests no anomaly but residual values indicate potential discrepancy"
+  ],
+  "likely_root_cause": "Insufficient evidence to determine root cause.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [],
+  "additional_checks_required": []
+}

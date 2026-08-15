@@ -14,27 +14,17 @@ import os
 import datetime
 
 # ============================================================
-# STEP 0: Load the feature-engineered dataset
+# Configuration constants
 # ============================================================
-DATA_PATH = "claims_pharmacy_auth_monitor_dataset_features.csv"   # <-- output of the feature engineering script
 OUTPUT_DIR = "outputs"
 
+# dtype spec for optional file-loading utilities
 dtype_spec = {
     "Record_ID": str,
     "BENE_ID": str,
     "Provider_NPI": str,
     "Auth_Linked_ID": str
 }
-
-print(f"Loading {DATA_PATH} ...")
-df = pd.read_csv(DATA_PATH, dtype=dtype_spec)
-
-date_columns = ["Service_Date", "Service_End_Date", "Processed_Date", "Decision_Date", "Submission_Date"]
-for col in date_columns:
-    if col in df.columns:
-        df[col] = pd.to_datetime(df[col], errors="coerce")
-
-print(f"Loaded {len(df):,} rows, {len(df.columns)} columns.")
 
 
 # ============================================================
@@ -50,8 +40,11 @@ def generate_profile(df, output_path=f"{OUTPUT_DIR}/data_profile.json"):
     profile["total_columns"] = len(df.columns)
     profile["columns"] = {}
 
-    # exact duplicate rows (every column identical)
-    profile["exact_duplicate_rows"] = int(df.duplicated().sum())
+    # exact duplicate rows (every column identical) -- handle list-like cells by converting to tuples
+    safe_df = df.copy()
+    for c in safe_df.columns:
+        safe_df[c] = safe_df[c].apply(lambda x: tuple(x) if isinstance(x, list) else x)
+    profile["exact_duplicate_rows"] = int(safe_df.duplicated().sum())
 
     # duplicate Record_ID values (same ID appearing more than once)
     if "Record_ID" in df.columns:
@@ -61,6 +54,11 @@ def generate_profile(df, output_path=f"{OUTPUT_DIR}/data_profile.json"):
 
     for col in df.columns:
         col_data = df[col]
+        # create a safe version for operations that require hashable values
+        try:
+            safe_col = col_data.apply(lambda x: tuple(x) if isinstance(x, list) else x)
+        except Exception:
+            safe_col = col_data
         col_profile = {}
 
         col_profile["data_type"] = str(col_data.dtype)
@@ -69,7 +67,7 @@ def generate_profile(df, output_path=f"{OUTPUT_DIR}/data_profile.json"):
         col_profile["missing_count"] = missing_count
         col_profile["missing_percentage"] = float(missing_count / len(df) * 100) if len(df) > 0 else 0.0
 
-        col_profile["unique_count"] = int(col_data.nunique(dropna=True))
+        col_profile["unique_count"] = int(safe_col.nunique(dropna=True))
 
         if pd.api.types.is_numeric_dtype(col_data):
             col_profile["min"] = float(col_data.min()) if pd.notnull(col_data.min()) else None
@@ -77,7 +75,9 @@ def generate_profile(df, output_path=f"{OUTPUT_DIR}/data_profile.json"):
             col_profile["mean"] = float(col_data.mean()) if pd.notnull(col_data.mean()) else None
 
         elif pd.api.types.is_object_dtype(col_data) or isinstance(col_data.dtype, pd.CategoricalDtype):
-            col_profile["value_counts"] = col_data.value_counts(dropna=True).head(10).to_dict()
+            vc = safe_col.value_counts(dropna=True).head(10).to_dict()
+            # JSON keys must be strings
+            col_profile["value_counts"] = {str(k): int(v) for k, v in vc.items()}
 
         profile["columns"][col] = col_profile
 
@@ -395,37 +395,50 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
 
 
 # ============================================================
-# STEP 5: RUN THE FULL PIPELINE
+# STEP 5: RUN THE FULL PIPELINE (standalone)
 # ============================================================
-print("Generating data profile...")
-profile = generate_profile(df)
-print(f"  -> outputs/data_profile.json")
+if __name__ == "__main__":
+    print("Generating data profile...")
+    # default CSV expected when running this module standalone
+    DATA_PATH = "claims_pharmacy_auth_monitor_dataset_features.csv"
+    try:
+        df = pd.read_csv(DATA_PATH, dtype=dtype_spec)
+    except Exception as e:
+        raise SystemExit(f"Failed to load {DATA_PATH}: {e}")
 
-print("Running quality checks (18 rules)...")
-results = run_quality_checks(df, RULES)
-print(f"  -> {len(results)} rules executed")
+    date_columns = ["Service_Date", "Service_End_Date", "Processed_Date", "Decision_Date", "Submission_Date"]
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce")
 
-print("Calculating scores and risk...")
-report = calculate_scores_and_risk(results, df)
-print(f"  -> outputs/quality_report.json")
+    profile = generate_profile(df)
+    print(f"  -> outputs/data_profile.json")
 
-print()
-print(f"Overall Quality Score : {report['overall_quality_score']:.2f} / 100")
-print(f"Overall Risk Level    : {report['overall_risk_level']}")
-print(f"Critical Issues       : {report['critical_issue_count']}")
-print()
-print("Dimension scores:")
-for dim, score in report["dimension_scores"].items():
-    print(f"  {dim:<15} {score:.2f}%")
-print()
-print("Top failed rules:")
-for r in report["top_failed_rules"]:
-    print(f"  {r['rule_id']} - {r['rule_name']} ({r['severity']}): {r['failure_rate_pct']:.2f}% failed")
+    print("Running quality checks (18 rules)...")
+    results = run_quality_checks(df, RULES)
+    print(f"  -> {len(results)} rules executed")
 
-print("\nRun successful!")
+    print("Calculating scores and risk...")
+    report = calculate_scores_and_risk(results, df)
+    print(f"  -> outputs/quality_report.json")
 
-# In Colab, download the results:
-# from google.colab import files
-# files.download(f"{OUTPUT_DIR}/data_profile.json")
-# files.download(f"{OUTPUT_DIR}/quality_report.json")
+    print()
+    print(f"Overall Quality Score : {report['overall_quality_score']:.2f} / 100")
+    print(f"Overall Risk Level    : {report['overall_risk_level']}")
+    print(f"Critical Issues       : {report['critical_issue_count']}")
+    print()
+    print("Dimension scores:")
+    for dim, score in report["dimension_scores"].items():
+        print(f"  {dim:<15} {score:.2f}%")
+    print()
+    print("Top failed rules:")
+    for r in report["top_failed_rules"]:
+        print(f"  {r['rule_id']} - {r['rule_name']} ({r['severity']}): {r['failure_rate_pct']:.2f}% failed")
+
+    print("\nRun successful!")
+
+    # In Colab, download the results:
+    # from google.colab import files
+    # files.download(f"{OUTPUT_DIR}/data_profile.json")
+    # files.download(f"{OUTPUT_DIR}/quality_report.json")
 
