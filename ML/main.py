@@ -2,6 +2,12 @@ import sys
 import os
 import json
 import pandas as pd
+from pathlib import Path
+
+# Add ML directory to path for imports
+_ml_dir = str(Path(__file__).resolve().parent)
+if _ml_dir not in sys.path:
+    sys.path.insert(0, _ml_dir)
 
 import feature_engineering as fe
 import isolation_forest as isf
@@ -9,27 +15,44 @@ import correlation_analysis as ca
 import statistical_detection as sd
 import data_quality as dq
 
-def main():
-    # Default input file in Data/ if none provided
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    default_input = os.path.join(repo_root, "Data", "claims_pharmacy_auth_monitor_dataset_final.xlsx")
 
-    if len(sys.argv) < 2:
-        input_file = default_input
-        print(f"No input provided. Using default: {input_file}")
-    else:
-        input_file = sys.argv[1]
-
+def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
+    """
+    Run the complete ML anomaly detection pipeline.
+    
+    Args:
+        input_file: Path to input CSV or Excel file
+        output_dir: Optional custom output directory (defaults to log/)
+    
+    Returns:
+        Path to the generated final_anomaly_report.json
+    
+    Raises:
+        FileNotFoundError: If input file does not exist
+        Exception: If pipeline processing fails
+    """
+    # Resolve file paths
+    repo_root = Path(__file__).resolve().parent.parent
+    input_path = Path(input_file)
+    
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_file}")
+    
+    if output_dir is None:
+        output_dir = str(repo_root / "log")
+    
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    
     # Load the input dataset (support CSV and Excel)
     try:
-        if input_file.lower().endswith(('.xls', '.xlsx')):
-            df = pd.read_excel(input_file)
+        if str(input_path).lower().endswith(('.xls', '.xlsx')):
+            df = pd.read_excel(input_path)
         else:
-            df = pd.read_csv(input_file)
+            df = pd.read_csv(input_path)
     except Exception as e:
-        print(f"Error reading {input_file}: {e}")
-        sys.exit(1)
-    
+        raise Exception(f"Error reading {input_file}: {e}")
+
     # 1. Feature Engineering
     # This prepares the data (e.g. creating Provider_NPI_Frequency, missing checks, etc.)
     df = fe.run_feature_engineering(df)
@@ -47,9 +70,9 @@ def main():
 
     # 5. Data Quality checks (profiles, rule engine, scoring)
     try:
-        profile = dq.generate_profile(df, output_path="outputs/data_profile.json")
+        profile = dq.generate_profile(df, output_path=str(output_path / "data_profile.json"))
         rule_results = dq.run_quality_checks(df, dq.RULES)
-        quality_report = dq.calculate_scores_and_risk(rule_results, df, output_dir="outputs")
+        quality_report = dq.calculate_scores_and_risk(rule_results, df, output_dir=str(output_path))
     except Exception as e:
         import traceback
         print("Data quality step failed:")
@@ -97,15 +120,33 @@ def main():
         results.append(result)
     
     # Write to a JSON file under `log/final_anomaly_report.json` (required by RCA agent)
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    log_dir = os.path.join(repo_root, "log")
-    os.makedirs(log_dir, exist_ok=True)
-    output_path = os.path.join(log_dir, "final_anomaly_report.json")
-    with open(output_path, "w") as f:
+    report_file = output_path / "final_anomaly_report.json"
+    with open(report_file, "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nPipeline complete! Output written to {output_path}")
+    print(f"\nML Pipeline complete! Output written to {report_file}")
     print(f"Total Records processed: {len(results)}")
     
+    return str(report_file)
+
+
+def main():
+    # Default input file in Data/ if none provided
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    default_input = os.path.join(repo_root, "Data", "claims_pharmacy_auth_monitor_dataset_final.xlsx")
+
+    if len(sys.argv) < 2:
+        input_file = default_input
+        print(f"No input provided. Using default: {input_file}")
+    else:
+        input_file = sys.argv[1]
+
+    try:
+        output_file = run_pipeline(input_file)
+        print(f"Success: {output_file}")
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
     main()

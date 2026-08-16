@@ -1,0 +1,79 @@
+{
+  "cases": [
+    {
+      "incident_id": "PH201771",
+      "record_type": "PHARMACY_CLAIM",
+      "status": "REJECTED",
+      "denial_reason_code": "88_DUR_REJECT",
+      "auth_required_flag": "Y",
+      "days_supply": 92,
+      "quantity_dispensed": 96,
+      "billed_amount": 248000,
+      "allowed_amount": 2100,
+      "paid_amount": 2100,
+      "iso_anomaly": true,
+      "iso_severity": 0.95,
+      "correlation_anomaly": false,
+      "quantity_supply_anomaly": false,
+      "root_cause": "Duration-based pharmacy authorization mismatch; the claim exceeded the allowed days-supply policy for the selected drug.",
+      "resolution_used": "Validated the payer duration rule, confirmed NDC and days-supply mapping, and routed the claim to the pharmacy exception queue for manual review.",
+      "recommended_actions": [
+        "Validate days-supply against the plan policy.",
+        "Check whether the NDC/drug authorization rule was applied correctly.",
+        "Escalate the case to pharmacy adjudication for exception review."
+      ],
+      "impact": "Medication dispensation was delayed and the claim had to be resubmitted or manually reviewed.",
+      "confidence": 0.88
+    },
+    {
+      "incident_id": "PH201330",
+      "record_type": "PHARMACY_CLAIM",
+      "status": "REJECTED",
+      "denial_reason_code": "88_DUR_REJECT",
+      "auth_required_flag": "Y",
+      "days_supply": 85,
+      "quantity_dispensed": 90,
+      "billed_amount": 220000,
+      "allowed_amount": 2000,
+      "paid_amount": 2000,
+      "iso_anomaly": true,
+      "iso_severity": 0.88,
+      "correlation_anomaly": false,
+      "quantity_supply_anomaly": false,
+      "root_cause": "Policy-rule mismatch in pharmacy adjudication caused the duration rejection despite otherwise stable pricing and dispensing values.",
+      "resolution_used": "Reviewed the prior authorization and payer policy for refill duration; approved after a manual pharmacy exception review.",
+      "recommended_actions": [
+        "Review prior-authorization duration limits.",
+        "Confirm the health-plan duration rules for refill exceptions.",
+        "Re-run adjudication after policy validation."
+      ],
+      "impact": "Delay in dispensing and additional operational review burden.",
+      "confidence": 0.82
+    },
+    {
+      "incident_id": "PH200881",
+      "record_type": "PHARMACY_CLAIM",
+      "status": "REJECTED",
+      "denial_reason_code": "88_DUR_REJECT",
+      "auth_required_flag": "Y",
+      "days_supply": 100,
+      "quantity_dispensed": 110,
+      "billed_amount": 260500,
+      "allowed_amount": 2150,
+      "paid_amount": 2150,
+      "iso_anomaly": true,
+      "iso_severity": 0.91,
+      "correlation_anomaly": false,
+      "quantity_supply_anomaly": false,
+      "root_cause": "The claim profile was valid clinically but outside the payer’s days-supply threshold and thus required manual review.",
+      "resolution_used": "Checked the utilization policy, matched the claim to the active authorization, and approved under a duration exception workflow.",
+      "recommended_actions": [
+        "Validate whether the authorization was correctly linked to the NDC.",
+        "Check policy thresholds for extended days supply.",
+        "Route to exception review when standard adjudication fails."
+      ],
+      "impact": "Discharge or fill was delayed until policy exception review was completed.",
+      "confidence": 0.85
+    }
+  ]
+}

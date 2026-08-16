@@ -1,8 +1,9 @@
 import sys
 import json
-from UC10_Anomaly_Monitor.rca import evidence_builder, agent
-from UC10_Anomaly_Monitor.config import settings
 from pathlib import Path
+
+from UC10_Anomaly_Monitor.rca import evidence_builder, rag, agent
+from UC10_Anomaly_Monitor.config import settings
 
 
 def main():
@@ -12,23 +13,27 @@ def main():
 
     record_id = sys.argv[1]
     ev = evidence_builder.build_evidence(record_id)
+    historical_kb = str(Path(settings.JSON_REPORT_PATH).parent / "historical_resolution_cases.json")
 
-    a = agent.RCAAgent()
-    rca_report = a.run_rca(ev)
+    # Step 1: Retrieve similar historical cases by record type + denial reason + anomaly pattern
+    similar_cases = rag.retrieve_similar_cases(ev, kb_path=historical_kb, limit=5)
 
-    # Print JSON to stdout and save to log/rca_<id>.json
-    # Pydantic v2: use model_dump_json
+    # Step 2: Prefer the LLM-powered RCA flow when it is configured; otherwise fall back to the local retrieval summary
     try:
+        a = agent.RCAAgent()
+        rca_report = a.run_rag_rca(ev, historical_cases=similar_cases, kb_path=historical_kb)
         out = rca_report.model_dump_json(indent=2)
-    except Exception:
-        out = json.dumps(rca_report.model_dump(), indent=2)
-    print(out)
+    except Exception as e:
+        print(f"LLM RCA path unavailable ({e}); using local retrieval-based fallback.")
+        recommendation = rag.generate_rag_recommendation(ev, kb_path=historical_kb)
+        out = json.dumps(recommendation, indent=2)
 
-    # Save
+    # Save result
     log_dir = Path(settings.JSON_REPORT_PATH).parent
     log_dir.mkdir(parents=True, exist_ok=True)
     out_path = log_dir / f"rca_{record_id}.json"
     out_path.write_text(out)
+    print(out)
     print(f"RCA report saved to: {out_path}")
 
 
