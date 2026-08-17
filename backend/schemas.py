@@ -141,3 +141,5 @@ class RunStatistics(BaseModel):
     by_record_type: Optional[Dict[str, int]] = None
     by_anomaly_type: Optional[Dict[str, int]] = None
     average_confidence: Optional[float] = None
+    overall_data_quality_score: Optional[float] = None
+    overall_risk_level: Optional[str] = None

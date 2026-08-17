@@ -32,6 +32,162 @@ def _coalesce(record: Dict[str, Any], keys: List[str], default: Any = None) -> A
     return default
 
 
+def _normalize_record_id(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip().upper()
+
+
+def _load_synthesis_lookup(report_json_path: str) -> Dict[str, Dict[str, Any]]:
+    """Load the synthesis report keyed by normalized record ID if available."""
+    report_dir = Path(report_json_path).resolve().parent
+    synthesis_path = report_dir / "final_anomaly_synthesis_report.json"
+    if not synthesis_path.exists():
+        return {}
+
+    try:
+        payload = json.loads(synthesis_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        logger.warning(f"[DB] Failed to load synthesis report: {e}")
+        return {}
+
+    records = payload.get("anomalies", []) if isinstance(payload, dict) else payload
+    if not isinstance(records, list):
+        return {}
+
+    lookup: Dict[str, Dict[str, Any]] = {}
+    for item in records:
+        if not isinstance(item, dict):
+            continue
+        record_id = _coalesce(item, ["Record ID", "Record_ID", "record_id", "incident_id"])
+        if record_id is None:
+            continue
+        lookup[_normalize_record_id(record_id)] = item
+
+    return lookup
+
+
+def _load_quality_summary(report_json_path: str) -> Dict[str, Any]:
+    """Load data-quality summary from the sibling quality report if it exists."""
+    report_dir = Path(report_json_path).resolve().parent
+    quality_path = report_dir / "quality_report.json"
+    if not quality_path.exists():
+        return {}
+
+    try:
+        payload = json.loads(quality_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload
+    except Exception as e:
+        logger.warning(f"[DB] Failed to load quality report: {e}")
+        return {}
+
+
+def _calculate_confidence(record: Dict[str, Any], fallback: float = 0.5) -> float:
+    """Calculate a confidence score from the anomaly signal profile."""
+    if isinstance(record.get("_metadata"), dict):
+        metadata_confidence = record["_metadata"].get("confidence")
+        if metadata_confidence is not None:
+            try:
+                return float(metadata_confidence)
+            except (TypeError, ValueError):
+                pass
+
+    if "confidence" in record:
+        try:
+            return float(record["confidence"])
+        except (TypeError, ValueError):
+            pass
+
+    try:
+        signal_count = int(record.get("ML_Anomaly_Signal_Count", 0) or 0)
+    except (TypeError, ValueError):
+        signal_count = 0
+
+    if signal_count >= 3:
+        return 0.9
+    if signal_count == 2:
+        return 0.75
+    if signal_count == 1:
+        return 0.5
+
+    if "ISO_Severity_0to1" in record:
+        try:
+            score = float(record.get("ISO_Severity_0to1", 0) or 0)
+            return max(0.0, min(1.0, 0.4 + (score * 0.6)))
+        except (TypeError, ValueError):
+            pass
+
+    return float(fallback)
+
+
+def _signal_name_mapping() -> Dict[str, str]:
+    return {
+        "ISO_Is_Anomaly": "Isolation Forest",
+        "Correlation_Anomaly": "Correlation",
+        "Quantity_Supply_Anomaly": "Quantity Supply",
+        "Stat_Zscore_Anomaly": "Z-Score",
+        "Stat_IQR_Anomaly": "IQR",
+    }
+
+
+def _derive_anomaly_type(record: Dict[str, Any]) -> str:
+    """Infer anomaly type from triggered signal flags."""
+    signal_names = []
+    for flag_name, signal_name in _signal_name_mapping().items():
+        if bool(record.get(flag_name, False)):
+            signal_names.append(signal_name)
+
+    if not signal_names:
+        existing_type = _coalesce(record, ["Anomaly", "anomaly_type"])
+        if existing_type:
+            return str(existing_type)
+        return "ML Anomaly"
+
+    if len(signal_names) > 1:
+        return "Composite Anomaly"
+
+    return f"{signal_names[0]} Anomaly"
+
+
+def _derive_primary_signal(record: Dict[str, Any]) -> Optional[str]:
+    """Pick the strongest signal for the anomaly record."""
+    signal_map = _signal_name_mapping()
+    triggered = []
+    for flag_name, signal_name in signal_map.items():
+        if bool(record.get(flag_name, False)):
+            triggered.append((signal_name, flag_name))
+
+    if not triggered:
+        existing = _coalesce(record, ["Primary Signal", "primary_signal"])
+        return str(existing) if existing else None
+
+    if len(triggered) == 1:
+        return triggered[0][0]
+
+    signal_scores = []
+    for signal_name, flag_name in triggered:
+        residual_key = flag_name.replace("_Anomaly", "_Residual")
+        residual_value = record.get(residual_key)
+        score = 0.0
+        try:
+            score = abs(float(residual_value)) if residual_value is not None else 0.0
+        except (TypeError, ValueError):
+            score = 0.0
+        if score == 0.0 and "ISO_Severity_0to1" in record and flag_name == "ISO_Is_Anomaly":
+            try:
+                score = abs(float(record.get("ISO_Severity_0to1", 0) or 0))
+            except (TypeError, ValueError):
+                score = 0.0
+        signal_scores.append((score, signal_name))
+
+    if signal_scores:
+        return max(signal_scores, key=lambda item: item[0])[1]
+
+    return triggered[0][0]
+
+
 def _extract_rca_payload(record_id: str, report_json_path: str) -> Dict[str, Any]:
     """Best-effort load RCA payload for a given record from known RCA outputs."""
     report_dir = Path(report_json_path).resolve().parent
@@ -55,6 +211,59 @@ def _extract_rca_payload(record_id: str, report_json_path: str) -> Dict[str, Any
             logger.warning(f"[DB] Failed to parse {consolidated_path.name}: {e}")
 
     return {}
+
+
+def _resolve_display_fields(record: Dict[str, Any], synthesis_record: Dict[str, Any], rca_payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve canonical display values from the synthesis report before falling back to raw ML values."""
+    metadata = synthesis_record.get("_metadata", {}) if isinstance(synthesis_record.get("_metadata"), dict) else {}
+
+    severity = _coalesce(synthesis_record, ["Severity"], default=get_severity_from_record(record))
+    priority = _coalesce(synthesis_record, ["Priority"], default=record.get("Priority", _map_severity_to_priority(str(severity).upper())))
+    anomaly_type = _coalesce(synthesis_record, ["Anomaly", "anomaly_type"], default=_derive_anomaly_type(record))
+    primary_signal = _coalesce(synthesis_record, ["Primary Signal", "primary_signal"], default=_derive_primary_signal(record))
+    likely_root_cause = _coalesce(synthesis_record, ["Likely Root Cause", "likely_root_cause"], default=rca_payload.get("likely_root_cause"))
+    recommended_action = _coalesce(synthesis_record, ["Recommended Action", "recommended_action"], default=rca_payload.get("recommended_action"))
+
+    if not recommended_action:
+        rca_actions = rca_payload.get("recommended_actions")
+        if isinstance(rca_actions, list):
+            recommended_action = "\n".join([str(x) for x in rca_actions if x is not None])
+        elif rca_actions is not None:
+            recommended_action = str(rca_actions)
+
+    impact = _coalesce(metadata, ["impact"], default=rca_payload.get("impact", record.get("impact")))
+    additional_checks = metadata.get("additional_checks")
+    if isinstance(additional_checks, list):
+        additional_checks = "\n".join([str(x) for x in additional_checks if x is not None])
+    elif additional_checks is not None:
+        additional_checks = str(additional_checks)
+    if not additional_checks:
+        additional_checks = rca_payload.get("additional_checks_required")
+        if isinstance(additional_checks, list):
+            additional_checks = "\n".join([str(x) for x in additional_checks if x is not None])
+        elif additional_checks is not None:
+            additional_checks = str(additional_checks)
+
+    confidence = None
+    if isinstance(metadata, dict) and metadata.get("confidence") is not None:
+        try:
+            confidence = float(metadata["confidence"])
+        except (TypeError, ValueError):
+            confidence = None
+    if confidence is None:
+        confidence = _calculate_confidence(record, fallback=rca_payload.get("confidence", 0.5))
+
+    return {
+        "severity": str(severity).upper(),
+        "priority": str(priority),
+        "anomaly_type": str(anomaly_type) if anomaly_type is not None else None,
+        "primary_signal": str(primary_signal) if primary_signal is not None else None,
+        "likely_root_cause": likely_root_cause,
+        "recommended_action": recommended_action,
+        "confidence": confidence,
+        "impact": impact,
+        "additional_checks": additional_checks,
+    }
 
 
 def generate_run_id() -> str:
@@ -106,9 +315,18 @@ def save_analysis_run(
         # Keep total input records separate from detected anomalies.
         total_records = len(source_records)
         anomalies = [r for r in source_records if bool(r.get("ML_Is_Anomalous", False))]
+        synthesis_lookup = _load_synthesis_lookup(report_json_path)
 
-        # Count records and severities
-        severity_counts = count_anomalies_by_severity(anomalies)
+        # Count records and severities using synthesis severity when available,
+        # otherwise fall back to the ML score mapping.
+        severity_counts = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        for anomaly in anomalies:
+            record_id = _coalesce(anomaly, ["Record_ID", "Record ID", "record_id", "incident_id"], default="")
+            synthesis_record = synthesis_lookup.get(_normalize_record_id(record_id), {}) if record_id else {}
+            severity = _coalesce(synthesis_record, ["Severity"], default=get_severity_from_record(anomaly))
+            severity = str(severity).upper()
+            if severity in severity_counts:
+                severity_counts[severity] += 1
 
         # Create run record
         run = AnalysisRun(
@@ -148,8 +366,11 @@ def save_analysis_run(
                     )
                 )
 
-                severity = get_severity_from_record(anomaly)
-                priority = anomaly.get("Priority", _map_severity_to_priority(severity))
+                synthesis_record = synthesis_lookup.get(_normalize_record_id(record_id), {})
+                severity = str(
+                    _coalesce(synthesis_record, ["Severity"], default=get_severity_from_record(anomaly))
+                ).upper()
+                priority = _coalesce(synthesis_record, ["Priority"], default=anomaly.get("Priority", _map_severity_to_priority(severity)))
                 rca_payload = _extract_rca_payload(record_id, report_json_path)
 
                 observed_facts = rca_payload.get("observed_facts")
@@ -168,33 +389,16 @@ def save_analysis_run(
                 if anomaly_signals is not None and not isinstance(anomaly_signals, dict):
                     anomaly_signals = {"raw": anomaly_signals}
 
-                recommended_action = _coalesce(
-                    anomaly,
-                    ["Recommended Action", "recommended_action"],
-                    default=rca_payload.get("recommended_action"),
-                )
-                if not recommended_action:
-                    rca_actions = rca_payload.get("recommended_actions")
-                    if isinstance(rca_actions, list):
-                        recommended_action = "\n".join([str(x) for x in rca_actions if x is not None])
-                    elif rca_actions is not None:
-                        recommended_action = str(rca_actions)
-
-                likely_root_cause = _coalesce(
-                    anomaly,
-                    ["Likely Root Cause", "likely_root_cause"],
-                    default=rca_payload.get("likely_root_cause"),
-                )
-                impact = _coalesce(
-                    anomaly,
-                    ["impact"],
-                    default=rca_payload.get("impact"),
-                )
-                additional_checks = rca_payload.get("additional_checks_required")
-                if isinstance(additional_checks, list):
-                    additional_checks = "\n".join([str(x) for x in additional_checks if x is not None])
-                elif additional_checks is not None:
-                    additional_checks = str(additional_checks)
+                display_values = _resolve_display_fields(anomaly, synthesis_record, rca_payload)
+                severity = display_values["severity"]
+                priority = display_values["priority"]
+                likely_root_cause = display_values["likely_root_cause"]
+                recommended_action = display_values["recommended_action"]
+                impact = display_values["impact"]
+                additional_checks = display_values["additional_checks"]
+                derived_anomaly_type = display_values["anomaly_type"]
+                derived_primary_signal = display_values["primary_signal"]
+                confidence = display_values["confidence"]
 
                 merged_full_record = dict(anomaly)
                 if rca_payload:
@@ -206,19 +410,13 @@ def save_analysis_run(
                     record_type=record_type,
                     severity=severity,
                     priority=priority,
-                    anomaly_type=_coalesce(anomaly, ["Anomaly", "anomaly_type"]),
-                    primary_signal=_coalesce(anomaly, ["Primary Signal", "primary_signal"]),
+                    anomaly_type=derived_anomaly_type,
+                    primary_signal=derived_primary_signal,
                     likely_root_cause=likely_root_cause,
                     recommended_action=recommended_action,
-                    confidence=anomaly.get("_metadata", {}).get("confidence", 0.5)
-                    if isinstance(anomaly.get("_metadata"), dict)
-                    else rca_payload.get("confidence", 0.5),
-                    impact=anomaly.get("_metadata", {}).get("impact", None)
-                    if isinstance(anomaly.get("_metadata"), dict)
-                    else impact,
-                    additional_checks=anomaly.get("_metadata", {}).get("additional_checks", None)
-                    if isinstance(anomaly.get("_metadata"), dict)
-                    else additional_checks,
+                    confidence=confidence,
+                    impact=impact,
+                    additional_checks=additional_checks,
                     observed_facts=observed_facts,
                     possible_causes=possible_causes,
                     evidence=evidence,
@@ -344,7 +542,11 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     confidences = [r.confidence for r in results if r.confidence is not None]
     avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
-    return {
+    quality_summary = _load_quality_summary(str(Path(__file__).resolve().parents[2] / "log" / "quality_report.json"))
+    overall_quality_score = quality_summary.get("overall_quality_score")
+    overall_risk_level = quality_summary.get("overall_risk_level")
+
+    response = {
         "total_records": run.total_records,
         "total_anomalies": run.anomaly_count,
         "by_severity": {
@@ -356,6 +558,13 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
         "by_anomaly_type": anomaly_counts,
         "average_confidence": round(avg_confidence, 3),
     }
+
+    if overall_quality_score is not None:
+        response["overall_data_quality_score"] = round(float(overall_quality_score), 2)
+    if overall_risk_level is not None:
+        response["overall_risk_level"] = overall_risk_level
+
+    return response
 
 
 def _map_severity_to_priority(severity: str) -> str:

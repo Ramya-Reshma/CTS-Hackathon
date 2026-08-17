@@ -285,38 +285,54 @@ def load_anomaly_report(report_json_path: str) -> Dict[str, Any]:
 
 def get_severity_from_record(record: Dict[str, Any]) -> str:
     """
-    Extract severity from an anomaly record.
+    Determine severity from the anomaly's signal profile.
 
-    Handles both old format (numeric scores) and new format (Severity field).
-
-    Args:
-        record: Anomaly record from pipeline output
-
-    Returns:
-        Severity string: "HIGH", "MEDIUM", or "LOW"
+    The original ML pipeline produces ISO_Severity_0to1 as a normalized rank among
+    flagged anomalies, which makes all anomaly scores appear "high" when viewed in
+    isolation. For the application severity tier, prefer the signal count and the
+    presence of multiple independent anomaly drivers rather than the raw normalized
+    ISO score alone.
     """
-    # Check for Severity field (new synthesis format)
     if "Severity" in record:
         severity = str(record.get("Severity", "")).upper()
         if severity in ["HIGH", "MEDIUM", "LOW"]:
             return severity
 
-    # Check for ISO_Severity_0to1 (old ML format)
+    signal_count = 0
+    try:
+        signal_count = int(record.get("ML_Anomaly_Signal_Count", 0) or 0)
+    except (TypeError, ValueError):
+        signal_count = 0
+
+    triggered_signals = []
+    for signal_key in [
+        "ISO_Is_Anomaly",
+        "Correlation_Anomaly",
+        "Quantity_Supply_Anomaly",
+        "Stat_Zscore_Anomaly",
+        "Stat_IQR_Anomaly",
+    ]:
+        if bool(record.get(signal_key, False)):
+            triggered_signals.append(signal_key)
+
+    if signal_count >= 2 or len(triggered_signals) >= 2:
+        return "HIGH"
+    if signal_count == 1 or len(triggered_signals) == 1:
+        return "MEDIUM"
+
     iso_severity = record.get("ISO_Severity_0to1")
     if iso_severity is not None:
         try:
             score = float(iso_severity)
-            # Map 0-1 score to HIGH/MEDIUM/LOW
-            if score >= 0.7:
+            if score >= 0.8:
                 return "HIGH"
-            elif score >= 0.4:
+            elif score >= 0.45:
                 return "MEDIUM"
             else:
                 return "LOW"
         except (ValueError, TypeError):
             pass
 
-    # Default to MEDIUM if cannot determine
     return "MEDIUM"
 
 

@@ -5,31 +5,30 @@
   "summary": "",
   "anomaly_signals": {},
   "evidence": [
-    "Isolation forest identified this record as anomalous with high severity.",
-    "No strong statistical signals detected (zscore, iqr).",
-    "No correlation anomalies found (anomaly = false, residual = -1304.779)."
+    "The record is categorized as a PHARMACY_CLAIM.",
+    "The ML signal count is 1, indicating one machine learning signal triggered the anomaly detection.",
+    "The provider NPI is associated with a known set of similar anomalies in the historical data."
   ],
   "observed_facts": [
-    "The record is a pharmacy claim with ID TEST100021.",
-    "It was flagged as an anomaly by the isolation forest model (raw score = -0.01639477466366246, severity = 0.9848889501563065).",
-    "No statistical anomalies were detected based on z-score or IQR methods.",
-    "There is no correlation-based anomaly detected.",
-    "The provider NPI is 1000000020.0."
+    "Record TEST100021 is a pharmacy claim with beneficiary ID -9000000001020 and provider NPI 1000000020.0.",
+    "The record is flagged as an anomaly by the isolation forest model with a severity score of 0.9848889501563065.",
+    "No statistical anomalies were detected (zscore and iqr are false).",
+    "No correlation-based anomalies were found (anomaly and quantity_supply_anomaly are false)."
   ],
   "possible_causes": [],
-  "likely_root_cause": "Based on similarity in record type (Pharmacy), anomaly pattern (ML-driven detection without clear statistical signals), and alignment with known provider-level anomalies in historical data, the most likely root cause is related to provider behavior, patient mix, coding, contract, credentialing, location, or source-data issues.",
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
   "confidence": 0.5,
   "impact": "",
   "recommended_actions": [
-    "Normalize for provider specialty, geography, panel size, and case mix.",
-    "Validate provider master data including NPI details, credentials, and location.",
-    "Review persistent outliers for this provider across similar claims and timeframes.",
-    "Investigate whether the provider has recently changed practices or if there's a pattern of unusual prescribing or dispensing behaviors."
+    "Normalize for specialty, geography, panel size and case mix.",
+    "Validate provider master data including NPI details, credentials, and service locations.",
+    "Review persistent outliers for this provider across multiple claims to identify recurring patterns.",
+    "Perform a cross-field validation on the claim's supply and financial data to check for inconsistencies."
   ],
   "additional_checks_required": [
-    "Verify if the provider's historical performance shows consistent deviations from peer providers.",
-    "Check for recent changes in provider contracts or credentialing status.",
-    "Cross-reference with other pharmacy claims from the same provider to identify trends."
+    "Verify if the provider has recently changed specialties or locations which might impact billing behavior.",
+    "Check for any recent changes in the provider's contract terms or credentialing status.",
+    "Analyze other pharmacy claims submitted by the same provider for similar anomalies or trends."
   ],
   "record_id": "TEST100021"
 }

@@ -5,29 +5,32 @@
   "summary": "",
   "anomaly_signals": {},
   "evidence": [
-    "The record shows an ML signal count of 1.",
-    "The anomaly is categorized under 'MEDICAL_CLAIM' record type.",
-    "Historical cases show similar patterns related to provider-level anomalies."
+    "Isolation forest identified the record as an anomaly with high severity.",
+    "No strong statistical or correlation signals support this anomaly."
   ],
   "observed_facts": [
     "The record is a medical claim with beneficiary ID '-9000000001005' and provider NPI '1000000005.0'.",
-    "The anomaly was flagged by an isolation forest ML model with a raw score of -0.0866 and severity of 1.0.",
-    "No correlation-based anomaly was detected (correlation.anomaly = false).",
-    "No statistical anomalies were found (zscore = false, iqr = false)."
+    "The claim was flagged as an anomaly by the isolation forest model with a raw score of -0.0866 and severity of 1.0.",
+    "No statistical anomalies were detected (zscore, iqr).",
+    "No correlation-based anomalies were found (anomaly, quantity_supply_anomaly)."
   ],
-  "possible_causes": [],
+  "possible_causes": [
+    "The anomaly may be due to provider-specific factors such as behavior, patient mix, coding practices, or location.",
+    "It could also stem from a data quality issue in provider master data or a misalignment in case mix or geography."
+  ],
   "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
   "confidence": 0.5,
   "impact": "",
   "recommended_actions": [
-    "Normalize the claim data for provider specialty, geography, panel size, and case mix.",
-    "Validate the provider master data for accuracy and completeness.",
-    "Review the provider's historical performance for persistent outliers."
+    "Normalize for specialty, geography, panel size and case mix.",
+    "Validate provider master data including NPI details, credentials, and location information.",
+    "Review persistent outliers for this provider across historical claims to identify patterns.",
+    "Investigate whether this is a one-time occurrence or part of a recurring trend."
   ],
   "additional_checks_required": [
-    "Check for recent changes in provider credentials or contract details.",
-    "Verify if the provider has been flagged in other systems for similar discrepancies.",
-    "Analyze claims trends over time for this provider to identify recurring patterns."
+    "Check if the provider has recently changed specialties or locations.",
+    "Review recent coding practices or billing trends for this provider.",
+    "Verify the accuracy of the provider's contractual agreements and credentialing status."
   ],
   "record_id": "TEST100006"
 }

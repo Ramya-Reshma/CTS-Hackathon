@@ -112,6 +112,7 @@ export default function Dashboard() {
           totalRecords={currentRun.total_records}
           totalAnomalies={currentRun.total_anomalies}
           severitySummary={currentRun.severity_summary}
+          overallDataQualityScore={statistics?.overall_data_quality_score}
         />
 
         {/* Filters and Controls */}

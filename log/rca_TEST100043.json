@@ -4,29 +4,22 @@
   "severity": "MEDIUM",
   "summary": "",
   "anomaly_signals": {},
-  "evidence": [
-    "The record shows a machine learning signal count of 1.",
-    "Historical cases show similar patterns related to provider-level anomalies."
-  ],
-  "observed_facts": [
-    "The record is of type PRIOR_AUTH.",
-    "It was flagged as an anomaly by the isolation forest model with a raw score of -0.04586592068085471 and severity of 1.0.",
-    "No statistical anomalies were detected (zscore and iqr are false).",
-    "No correlation-based anomalies were found (anomaly and quantity_supply_anomaly are false)."
-  ],
+  "evidence": [],
+  "observed_facts": [],
   "possible_causes": [],
   "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
-  "confidence": 0.5,
+  "confidence": 0.9,
   "impact": "",
   "recommended_actions": [
-    "Normalize for specialty, geography, panel size and case mix.",
-    "Validate provider master data including NPI details.",
-    "Review persistent outliers for this provider (NPI: 1000000042.0)."
+    "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers.",
+    "investigate the provider's prior auth submission patterns and compare against peer providers.",
+    "validate that the provider NPI 1000000042.0 is correctly enrolled and credentialed.",
+    "check for any recent changes in provider practices or patient demographics that could impact claim patterns."
   ],
   "additional_checks_required": [
-    "Verify if this provider's prior auth patterns align with historical norms for their specialty and region.",
-    "Check for any recent changes in provider credentials or contract status.",
-    "Cross-reference with other records from the same provider for consistency."
+    "Review the provider's historical prior auth approval rates and trends.",
+    "Validate whether the beneficiary has been consistently assigned to this provider.",
+    "Confirm if there are any recent updates or changes to the provider's contract terms or network status."
   ],
   "record_id": "TEST100043"
 }

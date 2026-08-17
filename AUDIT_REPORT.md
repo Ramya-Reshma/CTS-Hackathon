@@ -20,34 +20,78 @@ The comprehensive audit has identified **3 CRITICAL BUGS** and **4 INTEGRATION I
 
 ## DETAILED FINDINGS
 
-### ISSUE #1: 50/50 ANOMALY BUG (CRITICAL)
+### ISSUE #1: ALL ANOMALIES CLASSIFIED AS HIGH ❌
 **Severity**: CRITICAL  
-**Current Behavior**: Frontend shows "TOTAL ANOMALIES = 50"  
-**Expected Behavior**: Frontend shows "TOTAL ANOMALIES = 8"  
-**Root Cause**: Backend loads ALL records from final_anomaly_report.json and treats them as anomalies
+**Current Behavior**: Database stores all 8 anomalies with severity="HIGH"  
+**Expected Behavior**: 7 records with 1 signal → MEDIUM, 1 record with 2 signals → HIGH  
+**Root Cause**: Backend uses ISO_Severity_0to1 for classification, which is ONLY normalized among detected anomalies
 
-**Test Results on 50-Row File**:
+**Technical Details**:
 ```
-Total input records: 50
-Actual anomalies (ML_Is_Anomalous=true): 8
-Normal records: 42
-
-Breakdown:
-  - 7 records with 1 signal (Isolation Forest)
-  - 1 record with 2 signals (ISO + Correlation)
+ISO_Severity_0to1 Calculation (isolation_forest.py line 342):
+  severity = (score_max - raw_scores) / (score_max - score_min)
+  
+Results for 8 anomalies:
+  Range: 0.8417 - 1.0 (ALL >= 0.7 threshold)
+  
+Classification Logic (pipeline_adapter.py line 296):
+  score >= 0.7 → "HIGH"
+  score >= 0.4 → "MEDIUM"  
+  else → "LOW"
 ```
 
-**Evidence Chain**:
-1. ✅ ML/main.py correctly generates final_anomaly_report.json with ALL 50 records + ML_Is_Anomalous flag
-2. ✅ final_anomaly_report.json contains correct flags (8 records marked true, 42 marked false)
-3. ❌ backend/services/result_service.py loads ALL records as anomalies:
+**Distribution of Test Anomalies**:
+```
+TEST100004       ISO_Sev=1.0000   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+TEST100006       ISO_Sev=1.0000   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+TEST100007       ISO_Sev=0.9489   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+TEST100011       ISO_Sev=0.8417   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+TEST100021       ISO_Sev=0.9849   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+TEST100022       ISO_Sev=0.9849   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+TEST100037       ISO_Sev=0.9618   Signals=2   Classified→HIGH ✅ (Correct! Has 2 signals)
+TEST100043       ISO_Sev=1.0000   Signals=1   Classified→HIGH ❌ (Should be MEDIUM)
+```
 
-```python
-# Line ~57 in result_service.py
-anomalies = report_data  # ← WRONG: Takes ALL 50 records
+**Discrepancy**: RCA agent generates severity="MEDIUM" for ALL 8, but backend IGNORES this and uses ISO_Severity_0to1
 
-# Should be:
-anomalies = [r for r in report_data if r.get('ML_Is_Anomalous')]  # ← CORRECT: Only 8
+### ISSUE #2: CONFIDENCE ALWAYS 50% ❌
+**Severity**: HIGH  
+**Current Behavior**: All anomalies stored with confidence=0.5  
+**Expected Behavior**: Confidence based on number of signals triggered
+- 1 signal → 0.50 (medium confidence)
+- 2 signals → 0.75 (high confidence)
+- 3+ signals → 0.95 (very high confidence)
+
+**Root Cause**: Neither ML pipeline nor RCA generates confidence scores
+- RCA hardcodes: `"confidence": 0.5` in all rca_*.json outputs
+- Backend line 193: Falls back to `rca_payload.get("confidence", 0.5)`
+- Result: Always 0.5
+
+### ISSUE #3: ANOMALY_TYPE MISSING ❌
+**Severity**: MEDIUM  
+**Current Behavior**: anomaly_type field is empty/null for all records
+**Expected Behavior**: Indicates which detector flagged the record
+- "Isolation Forest Anomaly"
+- "Correlation Anomaly"  
+- "Quantity Supply Anomaly"
+- "Multi-Signal Composite" (if multiple)
+
+**Root Cause**: final_anomaly_report.json does NOT generate "Anomaly" or "anomaly_type" field
+- RCA agent does NOT generate "anomaly_type" field
+- Backend looks for ["Anomaly", "anomaly_type"] and finds nothing
+- Result: _coalesce() returns None
+
+### ISSUE #4: PRIMARY_SIGNAL MISSING ❌
+**Severity**: MEDIUM  
+**Current Behavior**: primary_signal field is empty/null for all records
+**Expected Behavior**: Shows which signal was most influential
+- For single-signal anomalies: That signal name
+- For multi-signal anomalies: The highest-deviation signal
+
+**Root Cause**: final_anomaly_report.json does NOT generate "Primary Signal" field
+- RCA agent does NOT generate "primary_signal" field
+- Backend looks for ["Primary Signal", "primary_signal"] and finds nothing
+- Result: _coalesce() returns None
 ```
 
 **Fix Required**:

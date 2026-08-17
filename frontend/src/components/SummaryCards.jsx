@@ -1,7 +1,7 @@
 import React from 'react'
 import './SummaryCards.css'
 
-export default function SummaryCards({ totalRecords, totalAnomalies, severitySummary }) {
+export default function SummaryCards({ totalRecords, totalAnomalies, severitySummary, overallDataQualityScore }) {
   return (
     <div className="summary-cards">
       <div className="card">
@@ -13,6 +13,13 @@ export default function SummaryCards({ totalRecords, totalAnomalies, severitySum
         <div className="card-label">Total Anomalies</div>
         <div className="card-value">{totalAnomalies.toLocaleString()}</div>
       </div>
+
+      {overallDataQualityScore !== undefined && overallDataQualityScore !== null && (
+        <div className="card">
+          <div className="card-label">Overall Data Quality</div>
+          <div className="card-value">{Number(overallDataQualityScore).toFixed(1)} / 100</div>
+        </div>
+      )}
 
       <div className="card card-high">
         <div className="card-label">High Severity</div>

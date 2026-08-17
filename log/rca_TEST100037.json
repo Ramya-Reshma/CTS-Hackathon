@@ -5,34 +5,34 @@
   "summary": "",
   "anomaly_signals": {},
   "evidence": [
-    "The record is of type PHARMACY_CLAIM.",
-    "The provider NPI is 1000000036.0.",
-    "No financial, supply, or statistical anomalies were detected directly (zscore=false, iqr=false).",
-    "The ML signal count is 2, suggesting model-based detection of anomalies."
+    "Isolation forest identifies this as an anomaly with high severity.",
+    "Correlation analysis shows a significant residual, indicating deviation from expected patterns.",
+    "No statistical z-score or IQR anomalies were detected.",
+    "ML signal count is 2, suggesting multiple signals support the anomaly detection."
   ],
   "observed_facts": [
     "The record is a pharmacy claim with ID TEST100037.",
-    "It was flagged as an anomaly by the isolation forest model with a raw score of -0.013015687656556474 and severity of 0.961809832164993.",
-    "Correlation analysis shows the anomaly is present (anomaly = true) with a residual of 48330.00432201132.",
-    "The quantity supply residual is negative (-64.84757419159251), but no quantity supply anomaly is indicated."
+    "It was flagged as an anomaly by the isolation forest model (raw score: -0.013015687656556474, severity: 0.9618).",
+    "The anomaly is correlated with a residual value of 48330.00432201132.",
+    "There is no quantity/supply anomaly detected."
   ],
   "possible_causes": [
-    "The anomaly could be due to provider-related issues such as behavior, patient mix, coding, contract, credentialing, location, or source-data issues.",
-    "There may be inconsistency in how the provider's data is represented or processed compared to other providers."
+    "This anomaly may be due to provider-specific factors such as behavior, patient mix, coding practices, or location.",
+    "The anomaly could stem from inconsistencies in provider master data or unaccounted variations in specialty or geography."
   ],
-  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "likely_root_cause": "Provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue, consistent with historical patterns of provider-related anomalies in pharmacy and medical claims.",
   "confidence": 0.5,
   "impact": "",
   "recommended_actions": [
-    "Normalize for specialty, geography, panel size and case mix.",
-    "Validate provider master data including NPI details, credentials, and service locations.",
-    "Review persistent outliers for this provider across similar claims to identify patterns.",
-    "Investigate potential mismatches in provider-specific attributes that might affect claim processing."
+    "Normalize for specialty, geography, panel size, and case mix.",
+    "Validate provider master data including NPI details, credentials, and location.",
+    "Review persistent outliers for this provider (NPI: 1000000036.0) across similar claim types.",
+    "Investigate if there are any recent changes in provider practices or contract terms that might explain the deviation."
   ],
   "additional_checks_required": [
-    "Cross-reference provider NPI with internal provider database for consistency in attributes like specialty and location.",
-    "Check if there are any recent changes in provider credentials or contracts that might have impacted claim handling.",
-    "Perform a peer benchmark check against other providers with similar profiles to validate the anomaly."
+    "Cross-reference the provider's historical claims data for trends in billing behavior.",
+    "Verify whether the provider is correctly categorized in terms of specialty and geographic area.",
+    "Check for any known issues or alerts related to this NPI in the system."
   ],
   "record_id": "TEST100037"
 }
