@@ -72,15 +72,20 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
 
         try:
             ev = evidence_builder.build_evidence(record_id, report_path=str(report_path))
-            similar_cases = rag.retrieve_similar_cases(ev, kb_path=historical_kb, limit=5)
+            similar_cases = rag.retrieve_similar_cases(ev, limit=5)
 
             try:
                 rca_agent = agent.RCAAgent()
-                rca_report = rca_agent.run_rag_rca(ev, historical_cases=similar_cases, kb_path=historical_kb)
-                payload = json.loads(rca_report.model_dump_json())
+                rca_report = rca_agent.run_rag_rca(ev, historical_cases=similar_cases)
+                if hasattr(rca_report, "model_dump"):
+                    payload = rca_report.model_dump()
+                elif isinstance(rca_report, dict):
+                    payload = rca_report
+                else:
+                    payload = json.loads(rca_report.model_dump_json())
             except Exception as llm_error:
                 logger.warning(f"[PIPELINE] LLM RCA failed for {record_id}, using fallback: {llm_error}")
-                payload = rag.generate_rag_recommendation(ev, kb_path=historical_kb)
+                payload = rag.generate_rag_recommendation(ev)
 
             payload["record_id"] = record_id
             consolidated.append(payload)
@@ -95,13 +100,18 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
     consolidated_path = output_dir / "rca_consolidated_report.json"
     consolidated_path.write_text(json.dumps(consolidated, indent=2), encoding="utf-8")
 
+    final_analysis_path = output_dir / "final_analysis_report.json"
+    final_output = {"analyses": consolidated} if len(consolidated) > 1 else (consolidated[0] if len(consolidated) == 1 else {"analyses": []})
+    final_analysis_path.write_text(json.dumps(final_output, indent=2), encoding="utf-8")
+
     logger.info(
-        f"[PIPELINE] RCA generation complete: {success}/{len(anomalous_records)} records, output={consolidated_path}"
+        f"[PIPELINE] RCA generation complete: {success}/{len(anomalous_records)} records, output={final_analysis_path}"
     )
     return {
         "generated": True,
         "count": success,
         "consolidated_path": str(consolidated_path),
+        "final_analysis_path": str(final_analysis_path),
     }
 
 

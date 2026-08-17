@@ -1,0 +1,25 @@
+{
+  "priority": "MEDIUM",
+  "record_id": "MC100453",
+  "anomaly_type": "Medical Claim Multivariate Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.004295784428761884 and severity 0.7055297742473573. Correlation analysis did not classify the record as anomalous, although the residual was 20.55828036031926. Statistical checks identified outliers in Billed_Amount, Allowed_Amount, Paid_Amount.",
+  "observed_facts": [
+    "The record is a MEDICAL_CLAIM with ID MC100453.",
+    "The provider NPI is 1174641658.0.",
+    "The beneficiary ID is -10000010259849.0.",
+    "Financial parameters: Billed=$11184.02, Paid=$8947.21, Allowed=$8947.21.",
+    "Isolation Forest flagged an anomaly (score=-0.004295784428761884, severity=0.7055297742473573).",
+    "Correlation residual between Paid and Allowed is 20.55828036031926 (flag=False)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Missing billed amount): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+    "Domain precedent (Missing paid amount): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+    "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue."
+  ],
+  "likely_root_cause": "Insufficient evidence to determine root cause.",
+  "recommended_actions": [
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation."
+  ]
+}

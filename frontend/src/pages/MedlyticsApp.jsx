@@ -18,7 +18,7 @@ export const NAV_PAGES = [
   { id: 'uploads',        label: 'Uploads',                icon: 'uploads' },
 ]
 
-export default function MedlyticsApp() {
+export default function MedlyticsApp({ user, onLogout }) {
   const [activePage, setActivePage] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -38,6 +38,8 @@ export default function MedlyticsApp() {
         onNavigate={(id) => { setActivePage(id); setSidebarOpen(false) }}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        user={user}
+        onLogout={onLogout}
       />
       <div className="medlytics-main">
         <MedlyticsHeader

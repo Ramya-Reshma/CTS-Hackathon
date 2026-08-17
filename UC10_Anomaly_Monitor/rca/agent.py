@@ -1,254 +1,212 @@
 import json
+import re
 import requests
 import boto3
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from UC10_Anomaly_Monitor.config import settings
 from UC10_Anomaly_Monitor.rca import prompts, schemas, rag
 
 
 class RCAAgent:
+    """
+    Root Cause Analysis Agent.
+    Orchestrates evidence reasoning, RAG knowledge synthesis, and AWS Bedrock LLM generation.
+    """
+
     def __init__(self):
         self.use_bedrock = settings.USE_BEDROCK
         self.bedrock_model_id = settings.BEDROCK_MODEL_ID
+        self.aws_region = settings.AWS_REGION
         self.url = settings.LM_STUDIO_URL
         self.lm_studio_model = settings.LM_STUDIO_MODEL
         self.timeout = settings.TIMEOUT_SECONDS
-        self.aws_region = settings.AWS_REGION
         
-        print(f"RCAAgent initialized: using_bedrock={self.use_bedrock}, model={self.bedrock_model_id if self.use_bedrock else self.lm_studio_model}")
+        print(f"[RCAAgent] Initialized: use_bedrock={self.use_bedrock}, model={self.bedrock_model_id if self.use_bedrock else self.lm_studio_model}, region={self.aws_region}")
+
+    def _call_bedrock(self, messages: list, system_prompt: Optional[str] = None) -> str:
+        """Call AWS Bedrock using the Converse API with existing configuration."""
+        client = boto3.client("bedrock-runtime", region_name=self.aws_region)
+        print(f"[RCAAgent] Invoking AWS Bedrock model: {self.bedrock_model_id} (region={self.aws_region})")
+        
+        bedrock_messages = []
+        for msg in messages:
+            bedrock_messages.append({
+                "role": msg["role"],
+                "content": [{"text": msg["content"]}]
+            })
+        
+        converse_kwargs = {
+            "modelId": self.bedrock_model_id,
+            "messages": bedrock_messages,
+            "inferenceConfig": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "topP": 0.9,
+            }
+        }
+        
+        if system_prompt:
+            converse_kwargs["system"] = [{"text": system_prompt}]
+        
+        response = client.converse(**converse_kwargs)
+        
+        if response.get("output") and response["output"].get("message"):
+            content_blocks = response["output"]["message"].get("content", [])
+            if content_blocks and "text" in content_blocks[0]:
+                return content_blocks[0]["text"]
+        
+        raise ValueError(f"Unexpected Bedrock response structure: {response}")
 
     def _call_lm_studio(self, messages: list) -> str:
+        """Fallback to local LM Studio when configured."""
         payload = {
             "model": self.lm_studio_model,
             "messages": messages,
+            "temperature": 0.3
         }
-        print(f"Calling LM Studio at {self.url}/chat/completions (timeout={self.timeout}s)")
+        print(f"[RCAAgent] Calling LM Studio at {self.url}/chat/completions")
         resp = requests.post(f"{self.url}/chat/completions", json=payload, timeout=self.timeout)
         resp.raise_for_status()
         data = resp.json()
-        # Expecting the assistant text at choices[0].message.content
-        try:
-            content = data["choices"][0]["message"]["content"]
-            print(f"LM Studio returned response of length {len(content)}")
-            return content
-        except Exception:
-            return json.dumps(data)
+        return data["choices"][0]["message"]["content"]
 
-    def _call_bedrock(self, messages: list, system_prompt: str = None) -> str:
-        """Call AWS Bedrock using the Converse API"""
-        client = boto3.client("bedrock-runtime", region_name=self.aws_region)
-        print(f"Calling AWS Bedrock model: {self.bedrock_model_id} (region={self.aws_region})")
-        
-        # Convert OpenAI format messages to Bedrock Converse API format
-        # Bedrock expects content as a list of content blocks, NOT with "type" key
-        bedrock_messages = []
-        for msg in messages:
-            bedrock_msg = {
-                "role": msg["role"],
-                "content": [{"text": msg["content"]}]  # No "type" key - just text
-            }
-            bedrock_messages.append(bedrock_msg)
-        
-        try:
-            # Build kwargs for converse API
-            converse_kwargs = {
-                "modelId": self.bedrock_model_id,
-                "messages": bedrock_messages,
-                "inferenceConfig": {
-                    "maxTokens": 4096,
-                    "temperature": 0.7,
-                    "topP": 0.9,
-                }
-            }
-            
-            # Add system prompt if provided (Bedrock uses separate 'system' parameter)
-            # System should be a list with text blocks, no "type" key
-            if system_prompt:
-                converse_kwargs["system"] = [{"text": system_prompt}]
-            
-            # Use Converse API (recommended for chat models)
-            response = client.converse(**converse_kwargs)
-            
-            # Extract content from response
-            if response.get("output") and response["output"].get("message"):
-                content_blocks = response["output"]["message"].get("content", [])
-                if content_blocks and "text" in content_blocks[0]:
-                    text = content_blocks[0]["text"]
-                    print(f"Bedrock returned response of length {len(text)}")
-                    return text
-            
-            raise ValueError(f"Unexpected Bedrock response format: {response}")
-        except Exception as e:
-            print(f"Bedrock Converse API error: {e}")
-            raise
+    def _generate_llm_response(self, user_content: str, system_prompt: str) -> str:
+        """Execute LLM call using primary Bedrock with graceful fallback."""
+        messages = [{"role": "user", "content": user_content}]
 
-    def run_rca(self, evidence_package: Dict[str, Any]) -> schemas.RCAOutput:
-        system_prompt = prompts.SYSTEM_PROMPT
-        user_content = prompts.USER_PROMPT_TEMPLATE.format(evidence=json.dumps(evidence_package, indent=2))
-        user_message = {"role": "user", "content": user_content}
-        messages = [user_message]
-
-        text = None
         if self.use_bedrock:
             try:
-                text = self._call_bedrock(messages, system_prompt=system_prompt)
+                return self._call_bedrock(messages, system_prompt=system_prompt)
             except Exception as e:
-                print(f"Bedrock call failed ({e}), attempting LM Studio fallback...")
+                print(f"[RCAAgent] Bedrock call failed: {e}. Trying LM Studio fallback...")
                 try:
-                    # LM Studio needs system in messages
-                    full_messages = [{"role": "system", "content": system_prompt}, user_message]
-                    text = self._call_lm_studio(full_messages)
+                    full_messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_content}]
+                    return self._call_lm_studio(full_messages)
                 except Exception as e2:
-                    print(f"LM Studio fallback also failed: {e2}")
-                    raise
+                    print(f"[RCAAgent] LM Studio fallback also failed: {e2}")
+                    raise e
         else:
             try:
-                # LM Studio needs system in messages
-                full_messages = [{"role": "system", "content": system_prompt}, user_message]
-                text = self._call_lm_studio(full_messages)
+                full_messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_content}]
+                return self._call_lm_studio(full_messages)
             except Exception as e:
-                print(f"LM Studio call failed ({e}), attempting Bedrock fallback...")
-                try:
-                    text = self._call_bedrock(messages, system_prompt=system_prompt)
-                except Exception as e2:
-                    print(f"Bedrock fallback also failed: {e2}")
-                    raise
+                print(f"[RCAAgent] LM Studio failed: {e}. Trying Bedrock fallback...")
+                return self._call_bedrock(messages, system_prompt=system_prompt)
 
-        return self._parse_and_validate(text, evidence_package)
-
-    def run_rag_rca(self, evidence_package: Dict[str, Any], historical_cases: List[Dict[str, Any]] | None = None, kb_path: str | None = None) -> schemas.RCAOutput:
+    def run_rag_rca(
+        self,
+        evidence_package: Dict[str, Any],
+        historical_cases: Optional[List[Dict[str, Any]]] = None,
+        kb_path: Optional[str] = None
+    ) -> schemas.RCAAnalysis:
+        """
+        Execute full RAG-grounded RCA for an anomalous record.
+        """
+        # Step 1: Retrieve top-5 RAG cases if not already provided
         if historical_cases is None:
             historical_cases = rag.retrieve_similar_cases(evidence_package, kb_path=kb_path, limit=5)
 
-        prompt = rag.build_rag_prompt(evidence_package, historical_cases)
+        # Step 2: Build prompt
         system_prompt = prompts.SYSTEM_PROMPT
-        user_message = {"role": "user", "content": prompt}
-        messages = [user_message]
+        user_prompt = rag.build_rag_prompt(evidence_package, historical_cases)
 
-        text = None
-        if self.use_bedrock:
-            try:
-                text = self._call_bedrock(messages, system_prompt=system_prompt)
-            except Exception as e:
-                print(f"Bedrock RAG call failed ({e}), attempting LM Studio fallback...")
-                try:
-                    # LM Studio needs system in messages
-                    full_messages = [{"role": "system", "content": system_prompt}, user_message]
-                    text = self._call_lm_studio(full_messages)
-                except Exception as e2:
-                    print(f"LM Studio fallback also failed: {e2}")
-                    raise
-        else:
-            try:
-                # LM Studio needs system in messages
-                full_messages = [{"role": "system", "content": system_prompt}, user_message]
-                text = self._call_lm_studio(full_messages)
-            except Exception as e:
-                print(f"LM Studio RAG call failed ({e}), attempting Bedrock fallback...")
-                try:
-                    text = self._call_bedrock(messages, system_prompt=system_prompt)
-                except Exception as e2:
-                    print(f"Bedrock fallback also failed: {e2}")
-                    raise
-
-        return self._parse_and_validate(text, evidence_package)
-
-    def _parse_and_validate(self, text: str, evidence_package: Dict[str, Any]) -> schemas.RCAOutput:
+        # Step 3: Call LLM
         try:
-            parsed = json.loads(text)
+            raw_text = self._generate_llm_response(user_prompt, system_prompt)
+            return self._parse_and_validate(raw_text, evidence_package, historical_cases)
+        except Exception as e:
+            print(f"[RCAAgent] LLM execution failed ({e}); generating deterministic RAG recommendation.")
+            return rag.generate_rag_recommendation(evidence_package, kb_path=kb_path)
+
+    def run_rca(self, evidence_package: Dict[str, Any]) -> schemas.RCAAnalysis:
+        """Run RCA without explicit RAG retrieval (backwards compatibility)."""
+        return self.run_rag_rca(evidence_package)
+
+    def _parse_and_validate(
+        self,
+        text: str,
+        evidence_package: Dict[str, Any],
+        historical_cases: List[Dict[str, Any]]
+    ) -> schemas.RCAAnalysis:
+        """
+        Parse raw LLM output, validate JSON schema, and normalize fields safely.
+        """
+        # Clean potential markdown formatting
+        cleaned = text.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        try:
+            parsed = json.loads(cleaned)
         except Exception:
-            import re
-            m = re.search(r"\{.*\}", text, flags=re.S)
+            m = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
             if m:
                 parsed = json.loads(m.group(0))
             else:
-                raise ValueError("LLM did not return valid JSON")
+                raise ValueError("LLM response did not contain valid JSON object.")
 
-        from pydantic import ValidationError
-
-        # Ensure parsed is a dict
         if not isinstance(parsed, dict):
-            print(f"WARNING: LLM returned non-dict type: {type(parsed)}, attempting to wrap...")
-            parsed = {"incident_id": evidence_package.get("record_id"), "evidence": parsed}
+            raise ValueError(f"LLM returned invalid non-dict root: {type(parsed)}")
 
-        print("LLM parsed JSON keys:", list(parsed.keys()) if isinstance(parsed, dict) else type(parsed))
+        # Normalization and field extraction
+        rec_id = str(parsed.get("record_id") or evidence_package.get("record_id") or "UNKNOWN")
+        
+        # Determine priority
+        iso_sev = evidence_package.get("isolation_forest", {}).get("severity_0to1", 0.0)
+        signal_count = evidence_package.get("ml_signal_count", 0)
+        
+        priority = parsed.get("priority") or ("HIGH" if (iso_sev and iso_sev >= 0.8) or signal_count >= 2 else "MEDIUM")
+        priority = str(priority).upper().strip()
+        if priority not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+            priority = "MEDIUM"
 
-        try:
-            return schemas.RCAOutput.parse_obj(parsed)
-        except ValidationError:
-            norm = {}
-            try:
-                norm["incident_id"] = parsed.get("incident_id") or parsed.get("record_id") or parsed.get("Record_ID") or evidence_package.get("record_id")
-                
-                # Safely extract record_type - evidence might be a list
-                record_type = parsed.get("record_type") or parsed.get("Record_Type")
-                if not record_type:
-                    evidence_obj = parsed.get("evidence")
-                    if isinstance(evidence_obj, dict):
-                        record_type = evidence_obj.get("record_type")
-                if not record_type:
-                    evidence_obj = evidence_package.get("evidence")
-                    if isinstance(evidence_obj, dict):
-                        record_type = evidence_obj.get("record_type")
-                norm["record_type"] = record_type or "CLAIM"
-                
-                norm["severity"] = parsed.get("severity") or parsed.get("level") or "MEDIUM"
-                
-                summary = parsed.get("summary") or parsed.get("summary_text") or parsed.get("explanation") or ""
-                norm["summary"] = summary if isinstance(summary, str) else str(summary)
+        anomaly_type = str(parsed.get("anomaly_type") or evidence_package.get("anomaly_type") or f"{evidence_package.get('record_type', 'Claim')} Anomaly")
+        root_cause = str(parsed.get("root_cause") or "Record was flagged by anomaly detection models.")
+        
+        # Ensure observed_facts is a list of strings
+        obs = parsed.get("observed_facts")
+        if isinstance(obs, list):
+            observed_facts = [str(x) for x in obs if x]
+        elif isinstance(obs, str):
+            observed_facts = [obs]
+        else:
+            observed_facts = [f"Record {rec_id} was analyzed by anomaly detection."]
 
-                signals = parsed.get("anomaly_signals") or parsed.get("signals") or {}
-                norm["anomaly_signals"] = signals if isinstance(signals, dict) else {}
+        # Ensure possible_causes is a list of strings
+        poss = parsed.get("possible_causes")
+        if isinstance(poss, list):
+            possible_causes = [str(x) for x in poss if x]
+        elif isinstance(poss, str):
+            possible_causes = [poss]
+        else:
+            possible_causes = ["Data or billing discrepancy requires review."]
 
-                # Safely extract and convert evidence
-                ev = parsed.get("evidence") or parsed.get("evidence_items")
-                if not ev:
-                    ev_list = []
-                elif isinstance(ev, dict):
-                    ev_list = [f"{k}: {v}" for k, v in ev.items()]
-                elif isinstance(ev, list):
-                    ev_list = [json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list)) else str(x) for x in ev]
-                else:
-                    ev_list = [str(ev)]
-                norm["evidence"] = ev_list
+        likely_root_cause = str(parsed.get("likely_root_cause") or "Insufficient evidence to determine root cause.")
+        
+        # Ensure recommended_actions is a list of strings
+        acts = parsed.get("recommended_actions")
+        if isinstance(acts, list):
+            recommended_actions = [str(x) for x in acts if x]
+        elif isinstance(acts, str):
+            recommended_actions = [acts]
+        else:
+            recommended_actions = ["Validate the claim record against source documentation."]
 
-                # Safely extract and convert observed_facts
-                obs = parsed.get("observed_facts") or parsed.get("facts") or parsed.get("observations")
-                if not obs:
-                    obs_list = []
-                elif isinstance(obs, dict):
-                    obs_list = [f"{k}: {v}" for k, v in obs.items()]
-                elif isinstance(obs, list):
-                    obs_list = [json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list)) else str(x) for x in obs]
-                else:
-                    obs_list = [str(obs)]
-                norm["observed_facts"] = obs_list
+        # Validate with Pydantic schema
+        result = schemas.RCAAnalysis(
+            priority=priority,
+            record_id=rec_id,
+            anomaly_type=anomaly_type,
+            root_cause=root_cause,
+            observed_facts=observed_facts,
+            possible_causes=possible_causes,
+            likely_root_cause=likely_root_cause,
+            recommended_actions=recommended_actions
+        )
 
-                # Extract and ensure list types
-                possible_causes = parsed.get("possible_causes") or parsed.get("hypotheses") or []
-                norm["possible_causes"] = possible_causes if isinstance(possible_causes, list) else [str(possible_causes)]
-                
-                likely_root_cause = parsed.get("likely_root_cause") or parsed.get("root_cause") or "Insufficient evidence to determine root cause."
-                norm["likely_root_cause"] = likely_root_cause if isinstance(likely_root_cause, str) else str(likely_root_cause)
-                
-                try:
-                    norm["confidence"] = float(parsed.get("confidence") or parsed.get("confidence_level") or 0.5)
-                except (ValueError, TypeError):
-                    norm["confidence"] = 0.5
-
-                impact = parsed.get("impact") or parsed.get("business_impact") or ""
-                norm["impact"] = impact if isinstance(impact, str) else str(impact)
-                
-                recommended_actions = parsed.get("recommended_actions") or parsed.get("recommendations") or []
-                norm["recommended_actions"] = recommended_actions if isinstance(recommended_actions, list) else [str(recommended_actions)]
-                
-                additional_checks = parsed.get("additional_checks_required") or parsed.get("additional_checks") or parsed.get("next_checks") or []
-                norm["additional_checks_required"] = additional_checks if isinstance(additional_checks, list) else [str(additional_checks)]
-
-                print("Normalized RCA dict keys:", list(norm.keys()))
-                print("Normalized RCA dict preview:", {k: norm[k] for k in norm if k in ['incident_id','record_type','severity']})
-            except Exception as norm_err:
-                print(f"ERROR during normalization: {norm_err}")
-                raise ValueError(f"Failed to normalize LLM output: {norm_err}")
-            
-            return schemas.RCAOutput.parse_obj(norm)
+        return result

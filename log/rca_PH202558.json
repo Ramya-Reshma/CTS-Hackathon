@@ -1,0 +1,27 @@
+{
+  "priority": "MEDIUM",
+  "record_id": "PH202558",
+  "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.027926409869576174 and severity 0.5668940687753056. Correlation analysis did not classify the record as anomalous, although the residual was -9.82877215053827. Statistical checks identified outliers in Billed_Amount, Patient_Responsibility.",
+  "observed_facts": [
+    "The record is a PHARMACY_CLAIM with ID PH202558.",
+    "The provider NPI is 1203251898.0.",
+    "The beneficiary ID is -10000010267895.0.",
+    "Financial parameters: Billed=$1967.75, Paid=$1377.6, Allowed=$1377.6.",
+    "Supply parameters: Quantity Dispensed=131.0, Days Supply=90.0.",
+    "Isolation Forest flagged an anomaly (score=-0.027926409869576174, severity=0.5668940687753056).",
+    "Correlation residual between Paid and Allowed is -9.82877215053827 (flag=False).",
+    "Quantity Dispensed vs Days Supply residual is 27.2606329583233 (flag=False)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Missing billed amount): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+    "Domain precedent (Unusual provider-member concentration): unusual billing, utilization, referral, dispensing, or provider-member relationship that may indicate error, waste, abuse, or fraud; an indicator is not proof.",
+    "Domain precedent (Unusual billing-code concentration): unusual billing, utilization, referral, dispensing, or provider-member relationship that may indicate error, waste, abuse, or fraud; an indicator is not proof."
+  ],
+  "likely_root_cause": "source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+  "recommended_actions": [
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
+    "validate documentation and data quality first, benchmark against appropriate peers, perform targeted review, and escalate only when corroborating evidence exists.",
+    "validate documentation and data quality first, benchmark against appropriate peers, perform targeted review, and escalate only when corroborating evidence exists."
+  ]
+}

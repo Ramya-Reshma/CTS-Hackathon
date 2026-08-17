@@ -1,0 +1,27 @@
+{
+  "priority": "MEDIUM",
+  "record_id": "PH202789",
+  "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.059088700319059995 and severity 0.6825057128591643. Correlation analysis did not classify the record as anomalous, although the residual was -13.477774788963075. Z-score and IQR statistical checks did not detect an anomaly.",
+  "observed_facts": [
+    "The record is a PHARMACY_CLAIM with ID PH202789.",
+    "The provider NPI is 1662783537.0.",
+    "The beneficiary ID is -98350777809.0.",
+    "Financial parameters: Billed=$554.58, Paid=$468.61, Allowed=$468.61.",
+    "Supply parameters: Quantity Dispensed=128.0, Days Supply=90.0.",
+    "Isolation Forest flagged an anomaly (score=-0.059088700319059995, severity=0.6825057128591643).",
+    "Correlation residual between Paid and Allowed is -13.477774788963075 (flag=False).",
+    "Quantity Dispensed vs Days Supply residual is 24.2606329583233 (flag=False)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Multivariate medical anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue."
+  ],
+  "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+  "recommended_actions": [
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation."
+  ]
+}

@@ -1,20 +1,81 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStore } from './hooks/useStore'
-import { healthCheck } from './services/api'
-import Upload from './pages/Upload'
+import { healthCheck, getMe, getRuns, logoutUser } from './services/api'
+import LoginPage from './pages/Auth/LoginPage'
+import RegisterPage from './pages/Auth/RegisterPage'
+import VerifyEmailPage from './pages/Auth/VerifyEmailPage'
+import PendingApprovalPage from './pages/Auth/PendingApprovalPage'
 import MedlyticsApp from './pages/MedlyticsApp'
 import './App.css'
 
 export default function App() {
   const currentRun = useStore(state => state.currentRun)
+  const setCurrentRun = useStore(state => state.setCurrentRun)
+  const resetStore = useStore(state => state.reset)
+
   const [apiHealthy, setApiHealthy] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [user, setUser] = useState(null)
+  const [authView, setAuthView] = useState('login') // 'login', 'register', 'verify-email', 'pending-approval'
+  const [authContext, setAuthContext] = useState({})
 
+  // Check URL query parameters for direct verification links (e.g. /verify-email?token=...)
   useEffect(() => {
-    const checkHealth = async () => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    if (token) {
+      setAuthView('verify-email')
+      setAuthContext({ token })
+    }
+  }, [])
+
+  // Initialize and verify authentication
+  useEffect(() => {
+    const initApp = async () => {
       try {
         await healthCheck()
         setApiHealthy(true)
+
+        // Verify stored session token
+        const token = localStorage.getItem('medlytics_auth_token')
+        if (token) {
+          try {
+            const userData = await getMe()
+            if (userData && userData.approval_status === 'APPROVED') {
+              setUser(userData)
+              // Load latest run if available
+              if (!currentRun) {
+                try {
+                  const runsData = await getRuns({ page: 1, pageSize: 5 })
+                  const records = runsData?.records || []
+                  if (records.length > 0) {
+                    const latest = records[0]
+                    setCurrentRun({
+                      run_id: latest.id,
+                      status: latest.processing_status,
+                      filename: latest.filename,
+                      total_records: latest.total_records,
+                      total_anomalies: latest.anomaly_count,
+                      severity_summary: latest.severity_summary,
+                    })
+                  }
+                } catch (e) {
+                  console.warn('Could not load latest run:', e)
+                }
+              }
+            } else if (userData && userData.approval_status === 'PENDING_APPROVAL') {
+              setAuthView('pending-approval')
+              setAuthContext({ email: userData.email })
+            } else {
+              localStorage.removeItem('medlytics_auth_token')
+              setUser(null)
+            }
+          } catch (err) {
+            console.warn('Session verification failed, requiring login:', err)
+            localStorage.removeItem('medlytics_auth_token')
+            setUser(null)
+          }
+        }
       } catch (error) {
         console.error('API health check failed:', error)
         setApiHealthy(false)
@@ -22,14 +83,48 @@ export default function App() {
         setChecking(false)
       }
     }
-    checkHealth()
+
+    initApp()
   }, [])
+
+  const handleLoginSuccess = async (authenticatedUser) => {
+    setUser(authenticatedUser)
+    try {
+      const runsData = await getRuns({ page: 1, pageSize: 5 })
+      const records = runsData?.records || []
+      if (records.length > 0) {
+        const latest = records[0]
+        setCurrentRun({
+          run_id: latest.id,
+          status: latest.processing_status,
+          filename: latest.filename,
+          total_records: latest.total_records,
+          total_anomalies: latest.anomaly_count,
+          severity_summary: latest.severity_summary,
+        })
+      }
+    } catch (e) {
+      console.warn('Could not load run upon login:', e)
+    }
+  }
+
+  const handleLogout = async () => {
+    await logoutUser()
+    setUser(null)
+    setAuthView('login')
+    resetStore()
+  }
+
+  const handleNavigateAuth = (view, context = {}) => {
+    setAuthView(view)
+    setAuthContext(context)
+  }
 
   if (checking) {
     return (
       <div className="app-loading">
         <div className="spinner" />
-        <p>Initializing MEDLYTICS...</p>
+        <p>Initializing MEDLYTICS Healthcare Intelligence Platform...</p>
       </div>
     )
   }
@@ -46,9 +141,45 @@ export default function App() {
     )
   }
 
-  return (
-    <div className="app">
-      {!currentRun ? <Upload /> : <MedlyticsApp />}
-    </div>
-  )
+  // If user is authenticated and approved, render the MEDLYTICS Dashboard
+  if (user && user.approval_status === 'APPROVED') {
+    return (
+      <div className="app">
+        <MedlyticsApp user={user} onLogout={handleLogout} />
+      </div>
+    )
+  }
+
+  // Otherwise, render authentication pages (Login, Register, Verify Email, Pending Approval)
+  switch (authView) {
+    case 'register':
+      return (
+        <RegisterPage
+          onNavigate={handleNavigateAuth}
+          onRegistered={(email) => setAuthContext({ email })}
+        />
+      )
+    case 'verify-email':
+      return (
+        <VerifyEmailPage
+          initialToken={authContext.token}
+          onNavigate={handleNavigateAuth}
+        />
+      )
+    case 'pending-approval':
+      return (
+        <PendingApprovalPage
+          email={authContext.email}
+          onNavigate={handleNavigateAuth}
+        />
+      )
+    case 'login':
+    default:
+      return (
+        <LoginPage
+          onNavigate={handleNavigateAuth}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )
+  }
 }

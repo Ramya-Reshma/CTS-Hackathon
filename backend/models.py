@@ -14,6 +14,57 @@ from sqlalchemy.orm import relationship
 Base = declarative_base()
 
 
+class User(Base):
+    """
+    User model for MEDLYTICS authentication and access control.
+    """
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(120), nullable=False)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    approval_status = Column(String(50), default="PENDING_EMAIL_VERIFICATION", nullable=False)
+    # Statuses: PENDING_EMAIL_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED, DISABLED
+    role = Column(String(50), default="USER", nullable=False)  # USER, ADMIN
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    tokens = relationship("VerificationToken", back_populates="user", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "email_verified": self.email_verified,
+            "approval_status": self.approval_status,
+            "role": self.role,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class VerificationToken(Base):
+    """
+    Verification token model for email verification and password resets.
+    """
+    __tablename__ = "verification_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String(128), unique=True, nullable=False, index=True)
+    token_type = Column(String(50), default="EMAIL_VERIFICATION", nullable=False)  # EMAIL_VERIFICATION, PASSWORD_RESET
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="tokens")
+
+
+
 class AnalysisRun(Base):
     """
     Metadata about an analysis run.
@@ -121,3 +172,53 @@ class AnomalyResult(Base):
         if self.full_record:
             result["full_record"] = self.full_record
         return result
+
+
+class AutoResolutionAudit(Base):
+    """
+    Audit log for all automatic and manual resolution actions.
+    Ensures complete traceability, before/after diffs, and verification proof.
+    """
+    __tablename__ = "auto_resolution_audit"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    fix_id = Column(String(64), unique=True, nullable=False, index=True)
+    run_id = Column(String(64), nullable=False, index=True)
+    record_id = Column(String(100), nullable=False, index=True)
+    issue_id = Column(String(100), nullable=False)
+    issue_type = Column(String(100), nullable=False)
+    layer = Column(String(100), nullable=False)
+    action_id = Column(String(100), nullable=False)
+    status = Column(String(50), nullable=False)  # AUTO_FIXED, FIX_FAILED_ROLLED_BACK, MANUAL_REVIEW_REQUIRED, NO_ACTION_REQUIRED
+    validation_status = Column(String(50), nullable=False)  # PASS, FAIL, SKIPPED
+    evidence = Column(JSON, nullable=True)
+    root_cause = Column(Text, nullable=True)
+    before_state = Column(JSON, nullable=True)
+    after_state = Column(JSON, nullable=True)
+    validation_details = Column(JSON, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    executed_by = Column(String(120), default="Auto-Resolution Agent", nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "fix_id": self.fix_id,
+            "run_id": self.run_id,
+            "record_id": self.record_id,
+            "issue_id": self.issue_id,
+            "issue_type": self.issue_type,
+            "layer": self.layer,
+            "action_id": self.action_id,
+            "status": self.status,
+            "validation_status": self.validation_status,
+            "evidence": self.evidence,
+            "root_cause": self.root_cause,
+            "before_state": self.before_state,
+            "after_state": self.after_state,
+            "validation_details": self.validation_details,
+            "error_message": self.error_message,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "executed_by": self.executed_by,
+        }
+

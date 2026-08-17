@@ -570,6 +570,9 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
 
     sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
 
+    from services.processing_integrity import compute_processing_integrity
+    integrity_data = compute_processing_integrity()
+
     response = {
         "total_records": run.total_records,
         "total_anomalies": run.anomaly_count,
@@ -589,6 +592,8 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
         response["overall_risk_level"] = overall_risk_level
     if sla_summary:
         response["sla_summary"] = sla_summary
+    if integrity_data:
+        response["processing_integrity"] = integrity_data
 
     return response
 

@@ -4,7 +4,7 @@ import { statusClass, fmtLabel, fmtNum, fmtPct, fmtBool } from '../../utils/stat
 import AnomalyDetail from '../AnomalyDetail'
 import './shared-pages.css'
 
-export default function OverviewPage() {
+export default function OverviewPage({ onNavigateToUploads }) {
   const { anomalies, statistics, isLoading, error, currentRun } = useMedlyticsData()
   const [selectedAnomaly, setSelectedAnomaly] = useState(null)
 
@@ -36,9 +36,114 @@ export default function OverviewPage() {
 
   return (
     <div className="ml-page">
-      <div className="ml-page-heading">
-        <h1>Monitoring Overview</h1>
-        <p>High-level operational health across Anomaly Detection, SLA Risk, and Data Quality.</p>
+      {/* Welcome & System Context Banner */}
+      <div className="ml-welcome-banner" style={{
+        background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.35) 0%, rgba(15, 23, 42, 0.9) 100%)',
+        border: '1px solid rgba(59, 130, 246, 0.25)',
+        borderRadius: '12px',
+        padding: '24px 28px',
+        marginBottom: '24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px',
+      }}>
+        <div>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#38bdf8', fontWeight: 700, marginBottom: '4px' }}>
+            Enterprise Healthcare Intelligence Platform
+          </div>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+            WELCOME TO MEDLYTICS
+          </h1>
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+            Unified real-time surveillance across Claims, Pharmacy, Prior Authorization, SLAs, and Data Quality.
+          </p>
+        </div>
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.8)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          padding: '10px 16px',
+          textAlign: 'right',
+        }}>
+          <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Active Dataset Run</div>
+          <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 700, color: currentRun?.run_id ? '#38bdf8' : '#f59e0b' }}>
+            {currentRun?.run_id ? currentRun.run_id : 'No active dataset'}
+          </div>
+        </div>
+      </div>
+
+      {/* Prominent Upload Dataset Section */}
+      <div className="ml-upload-entry-card" style={{
+        background: 'rgba(15, 23, 42, 0.75)',
+        border: '1px solid rgba(59, 130, 246, 0.3)',
+        borderRadius: '12px',
+        padding: '22px 28px',
+        marginBottom: '28px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '24px',
+        flexWrap: 'wrap',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#ffffff',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+            flexShrink: 0,
+          }}>
+            {/* Upload Icon [ ↑ ] */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div>
+            <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px 0' }}>
+              DATASET UPLOAD
+            </h2>
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+              Upload a healthcare claims, pharmacy, or authorization dataset to begin monitoring.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="ml-btn ml-btn-primary"
+          onClick={() => onNavigateToUploads && onNavigateToUploads()}
+          style={{
+            padding: '12px 22px',
+            fontSize: '13px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            border: 'none',
+            color: '#ffffff',
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+          }}
+          id="btn-overview-upload-dataset"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>Upload Dataset</span>
+        </button>
       </div>
 
       <div className="ml-section-label">Overall Monitoring Summary</div>

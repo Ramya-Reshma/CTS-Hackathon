@@ -39,7 +39,7 @@ const icons = {
   ),
 }
 
-export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose }) {
+export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose, user, onLogout }) {
   return (
     <>
       {/* Mobile overlay */}
@@ -75,8 +75,57 @@ export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <span className="sidebar-footer-text">MEDLYTICS · v2.0</span>
+        <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {user && (
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.65)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              padding: '8px 10px',
+              fontSize: '11px',
+              textAlign: 'left',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}>
+              <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.name || 'Enterprise User'}
+              </div>
+              <div style={{ color: '#64748b', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.email}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onLogout}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              borderRadius: '6px',
+              color: '#fca5a5',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease',
+            }}
+            id="btn-sidebar-logout"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Sign Out</span>
+          </button>
+
+          <span className="sidebar-footer-text">MEDLYTICS · v2.0 Enterprise</span>
         </div>
       </aside>
     </>

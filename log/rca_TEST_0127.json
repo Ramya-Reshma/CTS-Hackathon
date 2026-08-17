@@ -1,0 +1,55 @@
+{
+  "incident_id": "",
+  "record_type": "",
+  "severity": "MEDIUM",
+  "summary": "Matched 3 similar historical  cases with the same rejection pattern.",
+  "anomaly_signals": {},
+  "evidence": {
+    "record_id": "TEST_0127",
+    "record_type": "PHARMACY_CLAIM",
+    "beneficiary_id": "-10000010280868.0",
+    "provider_npi": "1285187037.0",
+    "financials": {},
+    "supply": {},
+    "statistical": {
+      "zscore": false,
+      "iqr": false
+    },
+    "isolation_forest": {
+      "is_anomaly": true,
+      "raw_score": -0.0069201682358522865,
+      "severity_0to1": 0.3268089053427146
+    },
+    "correlation": {
+      "anomaly": false,
+      "residual": -25.039020337422812,
+      "quantity_supply_anomaly": false,
+      "quantity_supply_residual": 5.631578947368418
+    },
+    "ml_signal_count": 1
+  },
+  "observed_facts": [],
+  "possible_causes": [
+    "Anomaly in multivariate pharmacy claim features.",
+    "Plan duration/authorization policy mismatch."
+  ],
+  "likely_root_cause": "The claim profile was valid clinically but outside the payer\u2019s days-supply threshold and thus required manual review.",
+  "confidence": 0.78,
+  "impact": "Possible medication delay or resubmission burden caused by claim rejection.",
+  "recommended_actions": [
+    "Validate whether the authorization was correctly linked to the NDC.",
+    "Check policy thresholds for extended days supply.",
+    "Route to exception review when standard adjudication fails.",
+    "Validate days-supply against the plan policy.",
+    "Check whether the NDC/drug authorization rule was applied correctly.",
+    "Escalate the case to pharmacy adjudication for exception review."
+  ],
+  "additional_checks_required": [
+    "Check if the claim was denied under a duration-policy rule instead of a true data-quality error.",
+    "Validate the drug authorization and days-supply against payer policy.",
+    "Checked the utilization policy, matched the claim to the active authorization, and approved under a duration exception workflow.",
+    "Validated the payer duration rule, confirmed NDC and days-supply mapping, and routed the claim to the pharmacy exception queue for manual review."
+  ],
+  "rag_context": "{\n  \"current_anomaly\": {\n    \"source\": \"final_anomaly_report.json\",\n    \"record_id\": \"TEST_0127\",\n    \"evidence\": {\n      \"record_id\": \"TEST_0127\",\n      \"record_type\": \"PHARMACY_CLAIM\",\n      \"beneficiary_id\": \"-10000010280868.0\",\n      \"provider_npi\": \"1285187037.0\",\n      \"financials\": {},\n      \"supply\": {},\n      \"statistical\": {\n        \"zscore\": false,\n        \"iqr\": false\n      },\n      \"isolation_forest\": {\n        \"is_anomaly\": true,\n        \"raw_score\": -0.0069201682358522865,\n        \"severity_0to1\": 0.3268089053427146\n      },\n      \"correlation\": {\n        \"anomaly\": false,\n        \"residual\": -25.039020337422812,\n        \"quantity_supply_anomaly\": false,\n        \"quantity_supply_residual\": 5.631578947368418\n      },\n      \"ml_signal_count\": 1\n    }\n  },\n  \"similar_historical_cases\": [\n    {\n      \"rank\": 1,\n      \"incident_id\": \"PH200881\",\n      \"record_type\": \"PHARMACY_CLAIM\",\n      \"status\": \"REJECTED\",\n      \"denial_reason_code\": \"88_DUR_REJECT\",\n      \"auth_required_flag\": \"Y\",\n      \"days_supply\": 100,\n      \"quantity_dispensed\": 110,\n      \"iso_anomaly\": true,\n      \"iso_severity\": 0.91,\n      \"root_cause\": \"The claim profile was valid clinically but outside the payer\u2019s days-supply threshold and thus required manual review.\",\n      \"resolution_used\": \"Checked the utilization policy, matched the claim to the active authorization, and approved under a duration exception workflow.\",\n      \"recommended_actions\": [\n        \"Validate whether the authorization was correctly linked to the NDC.\",\n        \"Check policy thresholds for extended days supply.\",\n        \"Route to exception review when standard adjudication fails.\"\n      ],\n      \"impact\": \"Discharge or fill was delayed until policy exception review was completed.\",\n      \"confidence\": 0.85\n    },\n    {\n      \"rank\": 2,\n      \"incident_id\": \"PH201771\",\n      \"record_type\": \"PHARMACY_CLAIM\",\n      \"status\": \"REJECTED\",\n      \"denial_reason_code\": \"88_DUR_REJECT\",\n      \"auth_required_flag\": \"Y\",\n      \"days_supply\": 92,\n      \"quantity_dispensed\": 96,\n      \"iso_anomaly\": true,\n      \"iso_severity\": 0.95,\n      \"root_cause\": \"Duration-based pharmacy authorization mismatch; the claim exceeded the allowed days-supply policy for the selected drug.\",\n      \"resolution_used\": \"Validated the payer duration rule, confirmed NDC and days-supply mapping, and routed the claim to the pharmacy exception queue for manual review.\",\n      \"recommended_actions\": [\n        \"Validate days-supply against the plan policy.\",\n        \"Check whether the NDC/drug authorization rule was applied correctly.\",\n        \"Escalate the case to pharmacy adjudication for exception review.\"\n      ],\n      \"impact\": \"Medication dispensation was delayed and the claim had to be resubmitted or manually reviewed.\",\n      \"confidence\": 0.88\n    },\n    {\n      \"rank\": 3,\n      \"incident_id\": \"PH201330\",\n      \"record_type\": \"PHARMACY_CLAIM\",\n      \"status\": \"REJECTED\",\n      \"denial_reason_code\": \"88_DUR_REJECT\",\n      \"auth_required_flag\": \"Y\",\n      \"days_supply\": 85,\n      \"quantity_dispensed\": 90,\n      \"iso_anomaly\": true,\n      \"iso_severity\": 0.88,\n      \"root_cause\": \"Policy-rule mismatch in pharmacy adjudication caused the duration rejection despite otherwise stable pricing and dispensing values.\",\n      \"resolution_used\": \"Reviewed the prior authorization and payer policy for refill duration; approved after a manual pharmacy exception review.\",\n      \"recommended_actions\": [\n        \"Review prior-authorization duration limits.\",\n        \"Confirm the health-plan duration rules for refill exceptions.\",\n        \"Re-run adjudication after policy validation.\"\n      ],\n      \"impact\": \"Delay in dispensing and additional operational review burden.\",\n      \"confidence\": 0.82\n    }\n  ]\n}",
+  "record_id": "TEST_0127"
+}

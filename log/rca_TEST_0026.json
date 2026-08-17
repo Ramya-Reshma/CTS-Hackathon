@@ -1,0 +1,25 @@
+{
+  "priority": "HIGH",
+  "record_id": "TEST_0026",
+  "anomaly_type": "Correlation Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 2. Isolation Forest flagged the record as anomalous with raw score -0.03344517694159699 and severity 0.6039120426579145. Correlation analysis flagged an anomaly between Paid and Allowed amount with residual -1143.7440512672674. Statistical checks identified outliers in Billed_Amount.",
+  "observed_facts": [
+    "The record is a MEDICAL_CLAIM with ID TEST_0026.",
+    "The provider NPI is 1851470157.0.",
+    "The beneficiary ID is -10000010262716.0.",
+    "Financial parameters: Billed=$819936.272361842, Paid=$6241.27, Allowed=$6241.27.",
+    "Isolation Forest flagged an anomaly (score=-0.03344517694159699, severity=0.6039120426579145).",
+    "Correlation residual between Paid and Allowed is -1143.7440512672674 (flag=True)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Billed-allowed residual): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Missing billed amount): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+    "Domain precedent (Extreme billed amount): adjudication, benefit calculation, contract pricing, payment processing, adjustment logic, or financial-field mapping defect."
+  ],
+  "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+  "recommended_actions": [
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
+    "reconcile the financial fields, validate benefit and contract rules, correct the calculation or mapping, and re-adjudicate/reconcile when necessary."
+  ]
+}

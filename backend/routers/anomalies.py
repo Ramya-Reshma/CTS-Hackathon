@@ -168,3 +168,27 @@ def get_run_info(run_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"[API] Error fetching run info: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.get("/runs/{run_id}/integrity")
+def get_run_integrity(run_id: str, db: Session = Depends(get_db)):
+    """
+    Get 4-stage processing integrity validation for an analysis run.
+    """
+    try:
+        run = get_run_by_id(db, run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
+
+        from services.processing_integrity import compute_processing_integrity
+        integrity = compute_processing_integrity()
+
+        return {
+            "run_id": run_id,
+            "processing_integrity": integrity,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[API] Error fetching integrity: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

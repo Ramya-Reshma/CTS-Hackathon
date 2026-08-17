@@ -40,6 +40,18 @@ def init_db():
     """Initialize the database (create all tables)."""
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
+    
+    # Seed initial admin user if none exists
+    try:
+        from services.auth_service import seed_initial_admin
+        db = SessionLocal()
+        try:
+            seed_initial_admin(db)
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[AUTH] Error seeding admin: {e}")
+
     print(f"Database initialized at: {DATABASE_URL}")
 
 
