@@ -24,6 +24,10 @@ class AnomalyResultBase(BaseModel):
     confidence: Optional[float] = 0.5
     impact: Optional[str] = None
     additional_checks: Optional[str] = None
+    observed_facts: Optional[List[str]] = None
+    possible_causes: Optional[List[str]] = None
+    evidence: Optional[List[str]] = None
+    anomaly_signals: Optional[Dict[str, Any]] = None
 
 
 class AnomalyResultResponse(AnomalyResultBase):

@@ -1,0 +1,33 @@
+{
+  "incident_id": "TEST100006",
+  "record_type": "MEDICAL_CLAIM",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "The record shows an ML signal count of 1.",
+    "The anomaly is categorized under 'MEDICAL_CLAIM' record type.",
+    "Historical cases show similar patterns related to provider-level anomalies."
+  ],
+  "observed_facts": [
+    "The record is a medical claim with beneficiary ID '-9000000001005' and provider NPI '1000000005.0'.",
+    "The anomaly was flagged by an isolation forest ML model with a raw score of -0.0866 and severity of 1.0.",
+    "No correlation-based anomaly was detected (correlation.anomaly = false).",
+    "No statistical anomalies were found (zscore = false, iqr = false)."
+  ],
+  "possible_causes": [],
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [
+    "Normalize the claim data for provider specialty, geography, panel size, and case mix.",
+    "Validate the provider master data for accuracy and completeness.",
+    "Review the provider's historical performance for persistent outliers."
+  ],
+  "additional_checks_required": [
+    "Check for recent changes in provider credentials or contract details.",
+    "Verify if the provider has been flagged in other systems for similar discrepancies.",
+    "Analyze claims trends over time for this provider to identify recurring patterns."
+  ],
+  "record_id": "TEST100006"
+}

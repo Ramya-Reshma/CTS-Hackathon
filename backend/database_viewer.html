@@ -1,0 +1,599 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UC10 Anomalies Database Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th { background: #007bff; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        tr:hover { background: #f9f9f9; }
+        .stat-card { display: inline-block; margin: 10px; padding: 15px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .stat-label { color: #666; font-size: 14px; }
+        .severity-HIGH { background: #fee; color: #c33; font-weight: bold; }
+        .severity-MEDIUM { background: #ffe; color: #aa5; font-weight: bold; }
+        .severity-LOW { background: #efe; color: #3a3; font-weight: bold; }
+        .json-cell { font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+        .collapsible { cursor: pointer; padding: 8px; background: #f0f0f0; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px; }
+        .collapsible:hover { background: #e0e0e0; }
+        .content { display: none; padding: 10px; background: #fafafa; border: 1px solid #ddd; border-top: none; }
+        .content.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ UC10 Anomalies Database Viewer</h1>
+        <p>Generated: 2026-08-17 10:15:05</p>
+        
+        <h2>📊 Database Statistics</h2>
+
+        <div class="stat-card">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Total Analysis Runs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">20100</div>
+            <div class="stat-label">Total Anomaly Results</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #c33;">468</div>
+            <div class="stat-label">HIGH Severity</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #aa5;">3132</div>
+            <div class="stat-label">MEDIUM Severity</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #3a3;">16500</div>
+            <div class="stat-label">LOW Severity</div>
+        </div>
+
+        <h2>📋 Analysis Runs</h2>
+        <table>
+            <tr>
+                <th>Run ID</th>
+                <th>Filename</th>
+                <th>Created At</th>
+                <th>Total Records</th>
+                <th>Anomalies Detected</th>
+                <th>Status</th>
+            </tr>
+
+            <tr>
+                <td><code>RUN-20260817043750-3c57066d</code></td>
+                <td>UC10_sample_input_50_rows.xlsx</td>
+                <td>2026-08-17 04:37:50.878517</td>
+                <td>50</td>
+                <td>50</td>
+                <td><strong>completed</strong></td>
+            </tr>
+
+            <tr>
+                <td><code>RUN-20260816192422-87f884b0</code></td>
+                <td>UC10_sample_input_50_rows.xlsx</td>
+                <td>2026-08-16 19:24:22.779099</td>
+                <td>50</td>
+                <td>50</td>
+                <td><strong>completed</strong></td>
+            </tr>
+
+            <tr>
+                <td><code>RUN-20260816192335-dffe351f</code></td>
+                <td>claims_pharmacy_auth_monitor_dataset_final.xlsx</td>
+                <td>2026-08-16 19:23:35.483791</td>
+                <td>10000</td>
+                <td>10000</td>
+                <td><strong>completed</strong></td>
+            </tr>
+
+            <tr>
+                <td><code>RUN-20260816191920-f5b289c1</code></td>
+                <td>claims_pharmacy_auth_monitor_dataset_final.xlsx</td>
+                <td>2026-08-16 19:19:20.991024</td>
+                <td>10000</td>
+                <td>10000</td>
+                <td><strong>completed</strong></td>
+            </tr>
+
+        </table>
+
+        <h2>🔍 Anomaly Results (Sample - Top 50)</h2>
+        <table>
+            <tr>
+                <th>Record ID</th>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Priority</th>
+                <th>Confidence</th>
+                <th>Created At</th>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-49</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908960</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-48</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908952</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-47</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908945</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-46</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908938</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-45</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908931</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-44</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908924</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-43</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908917</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-42</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908910</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-41</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908903</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-40</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908895</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-39</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908888</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-38</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908880</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-37</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908873</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-36</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908865</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-35</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908858</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-34</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908850</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-33</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908841</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-32</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908796</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-31</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908789</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-30</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908782</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-29</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908775</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-28</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908768</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-27</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908761</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-26</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908753</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-25</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908746</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-24</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908738</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-23</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908731</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-22</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908724</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-21</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908716</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-20</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908709</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-19</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908702</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-18</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908695</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-17</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908688</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-16</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908680</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-15</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908673</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-14</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908666</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-13</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908659</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-12</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908651</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-11</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908644</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-10</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908637</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-9</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908629</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-8</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908622</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-7</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908615</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-6</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908608</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-5</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908600</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-4</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908593</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-3</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-HIGH">HIGH</td>
+                <td>2-High</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908585</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-2</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908577</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-1</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-LOW">LOW</td>
+                <td>4-Low</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908568</td>
+            </tr>
+
+            <tr>
+                <td><code>UNKNOWN-0</code></td>
+                <td>UNKNOWN</td>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3-Medium</td>
+                <td>0.50</td>
+                <td>2026-08-17 04:37:50.908554</td>
+            </tr>
+
+        </table>
+        
+        <h2>📊 Severity Distribution</h2>
+        <table>
+            <tr>
+                <th>Severity Level</th>
+                <th>Count</th>
+                <th>Percentage</th>
+            </tr>
+
+            <tr>
+                <td class="severity-HIGH">HIGH</td>
+                <td>468</td>
+                <td>2.33%</td>
+            </tr>
+            <tr>
+                <td class="severity-MEDIUM">MEDIUM</td>
+                <td>3132</td>
+                <td>15.58%</td>
+            </tr>
+            <tr>
+                <td class="severity-LOW">LOW</td>
+                <td>16500</td>
+                <td>82.09%</td>
+            </tr>
+
+        </table>
+    </div>
+    
+    <script>
+        // Add collapsible functionality if needed
+    </script>
+</body>
+</html>

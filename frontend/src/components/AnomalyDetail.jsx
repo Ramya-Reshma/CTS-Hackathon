@@ -143,6 +143,58 @@ export default function AnomalyDetail({ anomaly, onClose }) {
               </section>
             )}
 
+            {/* Evidence */}
+            {Array.isArray(detail.evidence) && detail.evidence.length > 0 && (
+              <section className="detail-section">
+                <h3>Evidence</h3>
+                <div className="checks-box">
+                  <ul>
+                    {detail.evidence.map((item, index) => (
+                      <li key={`evidence-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            )}
+
+            {/* Observed Facts */}
+            {Array.isArray(detail.observed_facts) && detail.observed_facts.length > 0 && (
+              <section className="detail-section">
+                <h3>Observed Facts</h3>
+                <div className="checks-box">
+                  <ul>
+                    {detail.observed_facts.map((item, index) => (
+                      <li key={`fact-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            )}
+
+            {/* Possible Causes */}
+            {Array.isArray(detail.possible_causes) && detail.possible_causes.length > 0 && (
+              <section className="detail-section">
+                <h3>Possible Causes</h3>
+                <div className="checks-box">
+                  <ul>
+                    {detail.possible_causes.map((item, index) => (
+                      <li key={`cause-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            )}
+
+            {/* Anomaly Signals */}
+            {detail.anomaly_signals && (
+              <section className="detail-section">
+                <h3>Anomaly Signals</h3>
+                <div className="technical-details">
+                  <pre>{JSON.stringify(detail.anomaly_signals, null, 2)}</pre>
+                </div>
+              </section>
+            )}
+
             {/* Technical Details */}
             {detail.full_record && (
               <section className="detail-section">

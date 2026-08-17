@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import text
 
 from models import Base
 
@@ -38,4 +39,25 @@ def get_db() -> Session:
 def init_db():
     """Initialize the database (create all tables)."""
     Base.metadata.create_all(bind=engine)
+    _ensure_schema_updates()
     print(f"Database initialized at: {DATABASE_URL}")
+
+
+def _ensure_schema_updates():
+    """Apply lightweight additive schema updates for SQLite deployments."""
+    required_columns = {
+        "observed_facts": "JSON",
+        "possible_causes": "JSON",
+        "evidence": "JSON",
+        "anomaly_signals": "JSON",
+    }
+
+    with engine.begin() as conn:
+        rows = conn.execute(text("PRAGMA table_info(anomaly_results)")).fetchall()
+        existing = {row[1] for row in rows}
+
+        for column_name, column_type in required_columns.items():
+            if column_name not in existing:
+                conn.execute(
+                    text(f"ALTER TABLE anomaly_results ADD COLUMN {column_name} {column_type}")
+                )

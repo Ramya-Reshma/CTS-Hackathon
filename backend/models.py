@@ -83,6 +83,10 @@ class AnomalyResult(Base):
     confidence = Column(Float, nullable=True, default=0.5)  # 0.0 - 1.0
     impact = Column(Text, nullable=True)  # Business impact description
     additional_checks = Column(Text, nullable=True)  # Recommended further checks
+    observed_facts = Column(JSON, nullable=True)  # RCA observed facts
+    possible_causes = Column(JSON, nullable=True)  # RCA hypotheses
+    evidence = Column(JSON, nullable=True)  # RCA evidence list
+    anomaly_signals = Column(JSON, nullable=True)  # RCA anomaly signals dictionary
 
     # Full anomaly record (JSON) for advanced users
     full_record = Column(JSON, nullable=True)  # Complete original anomaly from pipeline
@@ -104,6 +108,10 @@ class AnomalyResult(Base):
             "confidence": self.confidence,
             "impact": self.impact,
             "additional_checks": self.additional_checks,
+            "observed_facts": self.observed_facts,
+            "possible_causes": self.possible_causes,
+            "evidence": self.evidence,
+            "anomaly_signals": self.anomaly_signals,
             "created_at": self.created_at.isoformat(),
         }
 

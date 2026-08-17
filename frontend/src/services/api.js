@@ -43,6 +43,18 @@ export const getRunInfo = async (runId) => {
 }
 
 /**
+ * List historical analysis runs
+ */
+export const getRuns = async (options = {}) => {
+  const { page = 1, pageSize = 20 } = options
+  const params = new URLSearchParams()
+  params.append('page', page)
+  params.append('page_size', pageSize)
+  const response = await api.get(`/runs?${params}`)
+  return response.data
+}
+
+/**
  * List anomalies for a run with optional filtering
  */
 export const getAnomalies = async (runId, options = {}) => {

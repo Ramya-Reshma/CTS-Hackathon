@@ -1,0 +1,34 @@
+{
+  "incident_id": "TEST100011",
+  "record_type": "PRIOR_AUTH",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "ML signal count is 1.",
+    "Provider NPI is 1000000010.0.",
+    "Beneficiary ID is -9000000001010."
+  ],
+  "observed_facts": [
+    "Record type is PRIOR_AUTH.",
+    "Isolation Forest flagged this record as an anomaly with a severity score of 0.84.",
+    "No statistical, financial, or supply-based anomalies were detected.",
+    "The record does not correlate with other anomalies."
+  ],
+  "possible_causes": [],
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [
+    "Normalize for specialty, geography, panel size and case mix.",
+    "Validate provider master data.",
+    "Review persistent outliers for this provider."
+  ],
+  "additional_checks_required": [
+    "Confirm provider specialty and geographic location alignment with historical norms.",
+    "Verify that the provider's credentialing and contract details are up-to-date.",
+    "Check for any recent changes in patient mix or coding practices associated with this provider.",
+    "Investigate if this is a recurring pattern for the provider."
+  ],
+  "record_id": "TEST100011"
+}

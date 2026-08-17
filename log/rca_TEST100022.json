@@ -1,0 +1,34 @@
+{
+  "incident_id": "TEST100022",
+  "record_type": "PHARMACY_CLAIM",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "The anomaly was detected by an ML model (ml_signal_count = 1).",
+    "There is no indication of outlier supply or quantity issues (quantity_supply_anomaly = false)."
+  ],
+  "observed_facts": [
+    "The record is a pharmacy claim with ID TEST100022.",
+    "The provider NPI is 1000000020.0.",
+    "The beneficiary ID is -9000000001020.",
+    "The record was flagged as an anomaly by the isolation forest model (raw score = -0.01639477466366246, severity = 0.9848889501563065).",
+    "No correlation-based anomalies were detected (anomaly = false, residual = -1304.7793513396512)."
+  ],
+  "possible_causes": [],
+  "likely_root_cause": "Provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [
+    "Normalize the claim data for provider specialty, geography, panel size, and case mix.",
+    "Validate the provider's master data including credentials, location, and specialty.",
+    "Review this provider's historical performance to identify persistent outliers or recurring anomalies.",
+    "Investigate if the provider\u2019s behavior or patient mix significantly deviates from typical patterns."
+  ],
+  "additional_checks_required": [
+    "Confirm provider NPI details against internal and external databases for accuracy.",
+    "Cross-check claim data for coding consistency and adherence to standard billing practices.",
+    "Examine other claims from the same provider to detect trends or repeated anomalies."
+  ],
+  "record_id": "TEST100022"
+}

@@ -23,6 +23,40 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _coalesce(record: Dict[str, Any], keys: List[str], default: Any = None) -> Any:
+    """Return the first non-empty value among candidate keys."""
+    for key in keys:
+        value = record.get(key)
+        if value is not None and value != "":
+            return value
+    return default
+
+
+def _extract_rca_payload(record_id: str, report_json_path: str) -> Dict[str, Any]:
+    """Best-effort load RCA payload for a given record from known RCA outputs."""
+    report_dir = Path(report_json_path).resolve().parent
+    per_record_path = report_dir / f"rca_{record_id}.json"
+
+    if per_record_path.exists():
+        try:
+            return json.loads(per_record_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning(f"[DB] Failed to parse {per_record_path.name}: {e}")
+
+    consolidated_path = report_dir / "rca_consolidated_report.json"
+    if consolidated_path.exists():
+        try:
+            payload = json.loads(consolidated_path.read_text(encoding="utf-8"))
+            if isinstance(payload, list):
+                for item in payload:
+                    if str(item.get("record_id", "")).upper() == str(record_id).upper():
+                        return item
+        except Exception as e:
+            logger.warning(f"[DB] Failed to parse {consolidated_path.name}: {e}")
+
+    return {}
+
+
 def generate_run_id() -> str:
     """Generate a unique run ID."""
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
@@ -60,14 +94,20 @@ def save_analysis_run(
         # Load the anomaly report
         report_data = load_anomaly_report(report_json_path)
 
-        # Extract anomalies (handle both formats)
+        # Extract source records (handle both formats)
         if isinstance(report_data, dict):
-            anomalies = report_data.get("anomalies", [])
+            source_records = report_data.get("anomalies", [])
         else:
-            anomalies = report_data
+            source_records = report_data
+
+        if not isinstance(source_records, list):
+            raise ValueError("Unsupported report format: expected a list of records")
+
+        # Keep total input records separate from detected anomalies.
+        total_records = len(source_records)
+        anomalies = [r for r in source_records if bool(r.get("ML_Is_Anomalous", False))]
 
         # Count records and severities
-        total_records = len(anomalies)
         severity_counts = count_anomalies_by_severity(anomalies)
 
         # Create run record
@@ -75,7 +115,7 @@ def save_analysis_run(
             id=run_id,
             filename=filename,
             total_records=total_records,
-            anomaly_count=total_records,  # All loaded records are anomalies
+            anomaly_count=len(anomalies),
             high_count=severity_counts.get("HIGH", 0),
             medium_count=severity_counts.get("MEDIUM", 0),
             low_count=severity_counts.get("LOW", 0),
@@ -86,34 +126,104 @@ def save_analysis_run(
         db.add(run)
         db.commit()
 
-        logger.info(f"[DB] Created analysis run: {run_id}")
+        logger.info(
+            f"[DB] Created analysis run: {run_id} (input_records={total_records}, anomalies={len(anomalies)})"
+        )
 
         # Save individual anomaly results
         for idx, anomaly in enumerate(anomalies):
             try:
+                record_id = str(
+                    _coalesce(
+                        anomaly,
+                        ["Record_ID", "Record ID", "record_id", "incident_id"],
+                        default=f"UNKNOWN-{idx}",
+                    )
+                )
+                record_type = str(
+                    _coalesce(
+                        anomaly,
+                        ["Record_Type", "Type", "record_type"],
+                        default="UNKNOWN",
+                    )
+                )
+
                 severity = get_severity_from_record(anomaly)
                 priority = anomaly.get("Priority", _map_severity_to_priority(severity))
+                rca_payload = _extract_rca_payload(record_id, report_json_path)
+
+                observed_facts = rca_payload.get("observed_facts")
+                if observed_facts is not None and not isinstance(observed_facts, list):
+                    observed_facts = [str(observed_facts)]
+
+                possible_causes = rca_payload.get("possible_causes")
+                if possible_causes is not None and not isinstance(possible_causes, list):
+                    possible_causes = [str(possible_causes)]
+
+                evidence = rca_payload.get("evidence")
+                if evidence is not None and not isinstance(evidence, list):
+                    evidence = [str(evidence)]
+
+                anomaly_signals = rca_payload.get("anomaly_signals")
+                if anomaly_signals is not None and not isinstance(anomaly_signals, dict):
+                    anomaly_signals = {"raw": anomaly_signals}
+
+                recommended_action = _coalesce(
+                    anomaly,
+                    ["Recommended Action", "recommended_action"],
+                    default=rca_payload.get("recommended_action"),
+                )
+                if not recommended_action:
+                    rca_actions = rca_payload.get("recommended_actions")
+                    if isinstance(rca_actions, list):
+                        recommended_action = "\n".join([str(x) for x in rca_actions if x is not None])
+                    elif rca_actions is not None:
+                        recommended_action = str(rca_actions)
+
+                likely_root_cause = _coalesce(
+                    anomaly,
+                    ["Likely Root Cause", "likely_root_cause"],
+                    default=rca_payload.get("likely_root_cause"),
+                )
+                impact = _coalesce(
+                    anomaly,
+                    ["impact"],
+                    default=rca_payload.get("impact"),
+                )
+                additional_checks = rca_payload.get("additional_checks_required")
+                if isinstance(additional_checks, list):
+                    additional_checks = "\n".join([str(x) for x in additional_checks if x is not None])
+                elif additional_checks is not None:
+                    additional_checks = str(additional_checks)
+
+                merged_full_record = dict(anomaly)
+                if rca_payload:
+                    merged_full_record["RCA"] = rca_payload
 
                 result = AnomalyResult(
                     run_id=run_id,
-                    record_id=anomaly.get("Record ID", f"UNKNOWN-{idx}"),
-                    record_type=anomaly.get("Type", "UNKNOWN"),
+                    record_id=record_id,
+                    record_type=record_type,
                     severity=severity,
                     priority=priority,
-                    anomaly_type=anomaly.get("Anomaly", None),
-                    primary_signal=anomaly.get("Primary Signal", None),
-                    likely_root_cause=anomaly.get("Likely Root Cause", None),
-                    recommended_action=anomaly.get("Recommended Action", None),
+                    anomaly_type=_coalesce(anomaly, ["Anomaly", "anomaly_type"]),
+                    primary_signal=_coalesce(anomaly, ["Primary Signal", "primary_signal"]),
+                    likely_root_cause=likely_root_cause,
+                    recommended_action=recommended_action,
                     confidence=anomaly.get("_metadata", {}).get("confidence", 0.5)
                     if isinstance(anomaly.get("_metadata"), dict)
-                    else 0.5,
+                    else rca_payload.get("confidence", 0.5),
                     impact=anomaly.get("_metadata", {}).get("impact", None)
                     if isinstance(anomaly.get("_metadata"), dict)
-                    else None,
+                    else impact,
                     additional_checks=anomaly.get("_metadata", {}).get("additional_checks", None)
                     if isinstance(anomaly.get("_metadata"), dict)
-                    else None,
-                    full_record=anomaly,  # Store full record for power users
+                    else additional_checks,
+                    observed_facts=observed_facts,
+                    possible_causes=possible_causes,
+                    evidence=evidence,
+                    anomaly_signals=anomaly_signals,
+                    full_record=merged_full_record,
                 )
                 db.add(result)
             except Exception as e:
@@ -122,7 +232,7 @@ def save_analysis_run(
                 continue
 
         db.commit()
-        logger.info(f"[DB] Saved {total_records} anomaly results for run {run_id}")
+        logger.info(f"[DB] Saved {len(anomalies)} anomaly results for run {run_id}")
 
         return run
 

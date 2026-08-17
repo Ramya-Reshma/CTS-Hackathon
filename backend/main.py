@@ -11,7 +11,7 @@ import logging
 
 from database import init_db
 from schemas import HealthCheckResponse, ErrorResponse
-from routers import analysis, anomalies
+from routers import analysis, anomalies, database_api
 
 # Configure logging
 logging.basicConfig(
@@ -57,6 +57,7 @@ def health_check():
 # Include routers
 app.include_router(analysis.router)
 app.include_router(anomalies.router)
+app.include_router(database_api.router)
 
 
 # Global exception handler

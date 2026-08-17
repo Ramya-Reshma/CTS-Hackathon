@@ -1,0 +1,32 @@
+{
+  "incident_id": "TEST100004",
+  "record_type": "PHARMACY_CLAIM",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "The anomaly was detected by ML model (ml_signal_count = 1).",
+    "Provider NPI is 1000000003.0."
+  ],
+  "observed_facts": [
+    "Record type is PHARMACY_CLAIM.",
+    "Isolation Forest flagged this record as an anomaly with raw score of -0.01860723149194221 and severity 1.0.",
+    "No statistical anomalies detected (zscore, iqr).",
+    "No correlation-based anomalies detected (anomaly, quantity_supply_anomaly)."
+  ],
+  "possible_causes": [],
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [
+    "Normalize for specialty, geography, panel size and case mix.",
+    "Validate provider master data including NPI details.",
+    "Review persistent outliers for the provider (NPI: 1000000003.0)."
+  ],
+  "additional_checks_required": [
+    "Check if the provider has been consistently flagged in other records.",
+    "Validate whether the beneficiary (ID: -9000000001003) is associated with atypical prescribing patterns or demographics.",
+    "Examine if there are any recent changes in provider credentials or contract status."
+  ],
+  "record_id": "TEST100004"
+}

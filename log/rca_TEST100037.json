@@ -1,0 +1,38 @@
+{
+  "incident_id": "TEST100037",
+  "record_type": "PHARMACY_CLAIM",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "The record is of type PHARMACY_CLAIM.",
+    "The provider NPI is 1000000036.0.",
+    "No financial, supply, or statistical anomalies were detected directly (zscore=false, iqr=false).",
+    "The ML signal count is 2, suggesting model-based detection of anomalies."
+  ],
+  "observed_facts": [
+    "The record is a pharmacy claim with ID TEST100037.",
+    "It was flagged as an anomaly by the isolation forest model with a raw score of -0.013015687656556474 and severity of 0.961809832164993.",
+    "Correlation analysis shows the anomaly is present (anomaly = true) with a residual of 48330.00432201132.",
+    "The quantity supply residual is negative (-64.84757419159251), but no quantity supply anomaly is indicated."
+  ],
+  "possible_causes": [
+    "The anomaly could be due to provider-related issues such as behavior, patient mix, coding, contract, credentialing, location, or source-data issues.",
+    "There may be inconsistency in how the provider's data is represented or processed compared to other providers."
+  ],
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [
+    "Normalize for specialty, geography, panel size and case mix.",
+    "Validate provider master data including NPI details, credentials, and service locations.",
+    "Review persistent outliers for this provider across similar claims to identify patterns.",
+    "Investigate potential mismatches in provider-specific attributes that might affect claim processing."
+  ],
+  "additional_checks_required": [
+    "Cross-reference provider NPI with internal provider database for consistency in attributes like specialty and location.",
+    "Check if there are any recent changes in provider credentials or contracts that might have impacted claim handling.",
+    "Perform a peer benchmark check against other providers with similar profiles to validate the anomaly."
+  ],
+  "record_id": "TEST100037"
+}

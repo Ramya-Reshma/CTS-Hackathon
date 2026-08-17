@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -219,7 +220,7 @@ def download_results(
             csv_bytes = output.getvalue().encode("utf-8")
             filename = f"anomalies_{run_id}.csv"
 
-            return FileResponse(
+            return StreamingResponse(
                 iter([csv_bytes]),
                 media_type="text/csv",
                 headers={"Content-Disposition": f"attachment; filename={filename}"},

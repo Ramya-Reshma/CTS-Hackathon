@@ -10,6 +10,7 @@ from database import get_db
 from schemas import AnomaliesListResponse, AnomalyResultResponse, AnomalyResultDetail
 from services.result_service import (
     get_run_by_id,
+    list_runs,
     get_anomalies_for_run,
     get_anomaly_detail,
     get_run_statistics,
@@ -20,6 +21,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["anomalies"])
+
+
+@router.get("/runs")
+def get_runs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """List analysis runs for run-history views."""
+    try:
+        offset = (page - 1) * page_size
+        runs, total = list_runs(db=db, limit=page_size, offset=offset)
+
+        return {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "records": [run.to_dict() for run in runs],
+        }
+    except Exception as e:
+        logger.error(f"[API] Error listing runs: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 @router.get("/runs/{run_id}/anomalies", response_model=AnomaliesListResponse)

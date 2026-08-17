@@ -27,6 +27,84 @@ if str(PROJECT_ROOT) not in sys.path:
 logger = logging.getLogger(__name__)
 
 
+def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
+    """Best-effort RCA generation for anomalous records using existing UC10 RCA modules."""
+    try:
+        from UC10_Anomaly_Monitor.rca import evidence_builder, rag, agent
+        from UC10_Anomaly_Monitor.config import settings
+    except Exception as import_error:
+        logger.warning(f"[PIPELINE] RCA modules unavailable, skipping RCA generation: {import_error}")
+        return {"generated": False, "reason": "rca_import_failed"}
+
+    report_path = Path(report_json_path)
+    if not report_path.exists():
+        return {"generated": False, "reason": "report_not_found"}
+
+    try:
+        records = json.loads(report_path.read_text(encoding="utf-8"))
+    except Exception as parse_error:
+        logger.warning(f"[PIPELINE] Could not parse report for RCA generation: {parse_error}")
+        return {"generated": False, "reason": "report_parse_failed"}
+
+    if not isinstance(records, list):
+        return {"generated": False, "reason": "invalid_report_format"}
+
+    anomalous_records = [r for r in records if bool(r.get("ML_Is_Anomalous", False))]
+    if not anomalous_records:
+        return {"generated": True, "count": 0, "consolidated_path": None}
+
+    max_rca_records = 100
+    if len(anomalous_records) > max_rca_records:
+        logger.info(
+            f"[PIPELINE] Limiting RCA generation to first {max_rca_records} anomalies out of {len(anomalous_records)}"
+        )
+        anomalous_records = anomalous_records[:max_rca_records]
+
+    output_dir = report_path.parent
+    historical_kb = str(Path(settings.JSON_REPORT_PATH).parent / "historical_resolution_cases.json")
+    consolidated = []
+    success = 0
+
+    for record in anomalous_records:
+        record_id = str(record.get("Record_ID", "")).strip()
+        if not record_id:
+            continue
+
+        try:
+            ev = evidence_builder.build_evidence(record_id, report_path=str(report_path))
+            similar_cases = rag.retrieve_similar_cases(ev, kb_path=historical_kb, limit=5)
+
+            try:
+                rca_agent = agent.RCAAgent()
+                rca_report = rca_agent.run_rag_rca(ev, historical_cases=similar_cases, kb_path=historical_kb)
+                payload = json.loads(rca_report.model_dump_json())
+            except Exception as llm_error:
+                logger.warning(f"[PIPELINE] LLM RCA failed for {record_id}, using fallback: {llm_error}")
+                payload = rag.generate_rag_recommendation(ev, kb_path=historical_kb)
+
+            payload["record_id"] = record_id
+            consolidated.append(payload)
+            (output_dir / f"rca_{record_id}.json").write_text(
+                json.dumps(payload, indent=2),
+                encoding="utf-8",
+            )
+            success += 1
+        except Exception as e:
+            logger.warning(f"[PIPELINE] RCA generation failed for {record_id}: {e}")
+
+    consolidated_path = output_dir / "rca_consolidated_report.json"
+    consolidated_path.write_text(json.dumps(consolidated, indent=2), encoding="utf-8")
+
+    logger.info(
+        f"[PIPELINE] RCA generation complete: {success}/{len(anomalous_records)} records, output={consolidated_path}"
+    )
+    return {
+        "generated": True,
+        "count": success,
+        "consolidated_path": str(consolidated_path),
+    }
+
+
 def normalize_data_types(input_file_path: str, output_file_path: str) -> str:
     """
     Normalize data types in the input file to prevent encoder errors.
@@ -142,6 +220,9 @@ def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple
         # Call the EXISTING pipeline with normalized data (still same logic)
         report_json_path = run_pipeline(normalized_file_path, output_dir=output_dir)
 
+        # Generate RCA outputs after pipeline report is produced.
+        rca_metadata = _generate_rca_outputs(report_json_path)
+
         logger.info(f"[PIPELINE] Pipeline completed successfully")
         logger.info(f"[PIPELINE] Report saved to: {report_json_path}")
 
@@ -155,6 +236,7 @@ def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple
             "report_path": report_json_path,
             "total_records": len(report_data) if isinstance(report_data, list) else len(report_data.get("anomalies", [])),
             "input_file": input_path.name,
+            "rca": rca_metadata,
         }
 
         # Cleanup normalized temp file
