@@ -1,0 +1,25 @@
+﻿/* MedlyticsApp.css */
+.medlytics-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--surface-page);
+}
+
+.medlytics-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: 220px;
+  transition: margin-left 0.22s ease;
+}
+
+.medlytics-content {
+  flex: 1;
+  padding: 28px 32px 48px;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .medlytics-main { margin-left: 0; }
+}

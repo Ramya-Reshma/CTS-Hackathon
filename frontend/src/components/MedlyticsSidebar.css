@@ -1,0 +1,151 @@
+﻿/* MedlyticsSidebar.css */
+.medlytics-sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--navy-900);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 200;
+  transition: transform 0.22s ease;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 199;
+}
+
+/* Brand */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px 16px;
+}
+
+.sidebar-logo {
+  width: 34px; height: 34px;
+  background: var(--navy-500);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-m {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -1px;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar-product-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.sidebar-product-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  font-weight: 400;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 4px 16px 8px;
+}
+
+/* Nav items */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  gap: 2px;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  position: relative;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.85);
+  transform: none;
+  box-shadow: none;
+}
+
+.sidebar-nav-item.active {
+  background: rgba(59,130,246,0.15);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.sidebar-nav-icon {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-icon svg {
+  width: 17px; height: 17px;
+}
+
+.sidebar-nav-label { flex: 1; }
+
+.sidebar-active-bar {
+  position: absolute;
+  right: 0; top: 6px; bottom: 6px;
+  width: 3px;
+  background: var(--navy-400);
+  border-radius: 3px 0 0 3px;
+}
+
+/* Footer */
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.sidebar-footer-text {
+  font-size: 10px;
+  color: rgba(255,255,255,0.25);
+  font-weight: 400;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .medlytics-sidebar {
+    transform: translateX(-100%);
+  }
+  .medlytics-sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay { display: block; }
+}
