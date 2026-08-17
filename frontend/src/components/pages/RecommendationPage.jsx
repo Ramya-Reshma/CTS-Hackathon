@@ -46,6 +46,9 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
   const [showEvidence, setShowEvidence] = useState(false)
   const [error, setError] = useState(null)
 
+  const full = selectedRecord?.full_record || {}
+  const anomalySignals = selectedRecord?.anomaly_signals || {}
+
   /* Keep a stable ref to the selected record to avoid useCallback dependency churn */
   const selectedRecordRef = useRef(selectedRecord)
   selectedRecordRef.current = selectedRecord
