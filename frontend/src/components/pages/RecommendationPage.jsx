@@ -72,27 +72,51 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
     if (Array.isArray(rec?.evidence)) rec.evidence.forEach(ev => evidenceList.push({ source: 'RAG_KB', field: 'Policy_Finding', value: ev, authority: 'RAG' }))
     if (rec?.likely_root_cause) evidenceList.push({ source: 'RCA_AGENT', field: 'Root_Cause', value: rec.likely_root_cause, authority: 'LLM' })
 
-    const isAnomalous = fr.ML_Is_Anomalous === true || fr.ISO_Is_Anomaly === true
+    // 1. Cross-Layer Detector Signals (Preserve canonical multi-layer backend findings)
+    const isAnomalous = fr.ML_Is_Anomalous === true || fr.ISO_Is_Anomaly === true || fr.Stat_Zscore_Anomaly === true || fr.Stat_IQR_Anomaly === true || (rec?.anomaly_type && rec.anomaly_type !== 'Normal')
+    const isCorrelation = fr.Correlation_Anomaly === true || (rec?.anomaly_type && rec.anomaly_type.toLowerCase().includes('correlation')) || (sigs?.correlation_residual && Math.abs(sigs.correlation_residual) > 3.0)
+    const isQuantitySupply = fr.Quantity_Supply_Anomaly === true || (rec?.anomaly_type && rec.anomaly_type.toLowerCase().includes('quantity'))
     const isSlaBreached = fr.SLA_Status === 'BREACHED' || fr.SLA_Breached === true
-    const missingDerived = fr.Allowed_To_Billed_Ratio === undefined || fr.Allowed_To_Billed_Ratio === null
-    const missingSla = isSlaBreached && !fr.SLA_Status
+    const isSlaMissingOutput = isSlaBreached && !fr.SLA_Status
+    const isMissingRequiredSource = !fr.Provider_NPI || !fr.BENE_ID || fr.Provider_NPI === 'None' || fr.BENE_ID === 'None'
 
+    // 2. Canonical Issue Classification (No artificial data-quality collapse)
     let issueType, issueDescription, contextData = {}
-    if (missingSla) {
+
+    if (isMissingRequiredSource) {
+      // Genuine source data quality defect (Missing NPI / Member ID)
+      issueType = 'DATA_QUALITY_MISSING_SOURCE_FIELD'
+      issueDescription = `Required source identifier missing for record ${rec.record_id}. No authoritative source value exists.`
+      contextData = { layer: 'DATA_QUALITY' }
+    } else if (isSlaMissingOutput) {
+      // Genuine downstream serialization drop
       issueType = 'SERIALIZATION_MISSING_SLA_OUTPUT'
-      issueDescription = `SLA engine produced BREACHED result for ${rec.record_id} but final output has null SLA status.`
-      contextData = { authoritative_result_available: true, layer: 'SLA' }
-    } else if (missingDerived && evidenceList.some(e => e.authority === 'SOURCE')) {
-      issueType = 'DATA_QUALITY_MISSING_DERIVABLE_FEATURE'
-      issueDescription = `Derived metric Allowed_To_Billed_Ratio is absent for ${rec.record_id}. Source inputs are present.`
-      contextData = { source_inputs_available: true, layer: 'DATA_QUALITY' }
+      issueDescription = `SLA engine produced BREACHED result for ${rec.record_id} but final output artifact has unpopulated SLA status.`
+      contextData = { authoritative_result_available: true, layer: 'FINAL_OUTPUT' }
+    } else if (isCorrelation) {
+      // Genuine correlation break
+      issueType = 'CORRELATION_ANALYSIS_DISCREPANCY'
+      issueDescription = `Record ${rec.record_id} exhibits correlation break residual outside normal feature relationship bounds.`
+      contextData = { layer: 'CORRELATION_ANALYSIS' }
     } else if (isAnomalous) {
+      // Genuine ML / Statistical Anomaly Detection finding
       issueType = 'ANOMALY_DETECTION_STATISTICAL_FLAG'
-      issueDescription = `Record ${rec.record_id} flagged as anomalous (Severity: ${rec.severity}) by ML detection engines.`
+      issueDescription = `Record ${rec.record_id} flagged by detection engine (${rec.anomaly_type || 'ML Isolation Forest Anomaly'}, Severity: ${rec.severity || 'MEDIUM'}).`
       contextData = { layer: 'ANOMALY_DETECTION' }
+    } else if (isSlaBreached) {
+      // Genuine SLA turnaround breach (Operational SLA layer)
+      issueType = 'SLA_BREACH_EXPOSURE'
+      issueDescription = `Statutory turnaround SLA deadline breached for ${rec.record_id}. Processing latency exceeded SLA limit.`
+      contextData = { layer: 'SLA' }
+    } else if (isQuantitySupply) {
+      // Genuine Quantity / Days Supply irregularity
+      issueType = 'QUANTITY_SUPPLY_ANALYSIS_DISCREPANCY'
+      issueDescription = `Dispense quantity / days supply irregularity detected for ${rec.record_id}.`
+      contextData = { layer: 'QUANTITY_SUPPLY_ANALYSIS' }
     } else {
+      // Normal monitoring record
       issueType = 'ANOMALY_DETECTION_STATISTICAL_FLAG'
-      issueDescription = `Record ${rec.record_id} processed normally with severity ${rec.severity || 'LOW'}.`
+      issueDescription = `Record ${rec.record_id} processed within baseline operational tolerances.`
       contextData = { layer: 'ANOMALY_DETECTION' }
     }
 
@@ -200,6 +224,22 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
         <div className="ares-body">
           {/* Decision Summary */}
           <div className="ares-decision-card">
+            {/* Multi-Signal Telemetry Bar */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>
+              <span className={`ares-pill ${(full.ML_Is_Anomalous || full.ISO_Is_Anomaly || selectedRecord?.anomaly_type !== 'Normal') ? 'ares-pill-rollback' : 'ares-pill-yes'}`}>
+                ML: {(full.ML_Is_Anomalous || full.ISO_Is_Anomaly || selectedRecord?.anomaly_type !== 'Normal') ? 'ANOMALY' : 'NORMAL'}
+              </span>
+              <span className={`ares-pill ${full.SLA_Status === 'BREACHED' ? 'ares-pill-no' : 'ares-pill-yes'}`}>
+                SLA: {full.SLA_Status || 'ON TRACK'}
+              </span>
+              <span className={`ares-pill ${(full.Provider_NPI && full.BENE_ID) ? 'ares-pill-yes' : 'ares-pill-no'}`}>
+                DQ: {(full.Provider_NPI && full.BENE_ID) ? 'PASS' : 'DEFECT'}
+              </span>
+              {full.Correlation_Anomaly && (
+                <span className="ares-pill ares-pill-warn">CORRELATION BREAK</span>
+              )}
+            </div>
+
             <div className="ares-decision-meta">
               <div className="ares-meta-row">
                 <span className="ares-meta-label">Issue ID</span>

@@ -103,6 +103,20 @@ ISSUE_TAXONOMY: Dict[str, Dict[str, Any]] = {
         "allowed_actions": ["REPROCESS_RECORD_USING_EXISTING_PIPELINE", "REBUILD_FINAL_OUTPUT", "MANUAL_REVIEW"],
         "requires_evidence": [EvidenceAuthority.VALIDATION.value],
     },
+    "SLA_BREACH_EXPOSURE": {
+        "layer": IssueLayer.SLA.value,
+        "subtype": "SLA_BREACH_SIGNAL",
+        "description": "Statutory turnaround SLA deadline breached based on deterministic latency calculation.",
+        "allowed_actions": ["MANUAL_REVIEW", "RERUN_EXISTING_SLA_CALCULATION"],
+        "requires_evidence": [EvidenceAuthority.SOURCE.value, EvidenceAuthority.BACKEND.value],
+    },
+    "QUANTITY_SUPPLY_ANALYSIS_DISCREPANCY": {
+        "layer": IssueLayer.QUANTITY_SUPPLY_ANALYSIS.value,
+        "subtype": "QUANTITY_SUPPLY_OUTLIER",
+        "description": "Dispense quantity or days supply exhibits dosage inconsistency or frequency spike.",
+        "allowed_actions": ["MANUAL_REVIEW", "NO_ACTION"],
+        "requires_evidence": [EvidenceAuthority.SOURCE.value, EvidenceAuthority.BACKEND.value],
+    },
     "RAG_EVIDENCE_UNLINKED_CASE": {
         "layer": IssueLayer.RAG_RETRIEVAL.value,
         "subtype": "MISSING_KB_LINKAGE",

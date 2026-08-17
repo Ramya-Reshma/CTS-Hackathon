@@ -81,8 +81,9 @@ class AutoResolutionAgent:
         layer = taxonomy_entry["layer"] if taxonomy_entry else IssueLayer.DATA_QUALITY.value
         allowed_actions = taxonomy_entry["allowed_actions"] if taxonomy_entry else ["MANUAL_REVIEW"]
 
-        # 2. Check if this is an expected statistical detection (e.g. valid anomaly signal)
-        if "STATISTICAL" in issue_type or "ANOMALY_SIGNAL" in issue_type or issue_type == "ANOMALY_DETECTION_STATISTICAL_FLAG":
+        # 2. Check if this is an expected statistical or correlation detection (Analytical detection, not a system error)
+        if "STATISTICAL" in issue_type or "ANOMALY_SIGNAL" in issue_type or issue_type == "ANOMALY_DETECTION_STATISTICAL_FLAG" or issue_type == "CORRELATION_ANALYSIS_DISCREPANCY":
+            signal_type = "Correlation break residual" if "CORRELATION" in issue_type else "Statistical variance / ML anomaly"
             return {
                 "issue_id": issue_id,
                 "run_id": run_id,
@@ -91,14 +92,54 @@ class AutoResolutionAgent:
                 "layer": layer,
                 "issue_description": issue_description,
                 "evidence": sorted_evidence,
-                "root_cause": root_cause or "Statistical variance identified by anomaly detection engine.",
+                "root_cause": root_cause or f"{signal_type} identified by multi-layer detection engines.",
                 "auto_fix_eligible": False,
-                "eligibility_reason": "Statistical anomalies are analytical detection results, not system defects. Suppressing valid signals is forbidden.",
+                "eligibility_reason": "Analytical detections and ML signals represent valid data patterns, not system software defects. Suppressing valid signals is strictly forbidden.",
                 "decision_state": "NO_ACTION_REQUIRED",
                 "proposed_action": "NO_ACTION",
-                "preconditions": ["Legitimate ML detection remains intact."],
-                "safety_rationale": "Preserves statistical monitoring integrity without suppressing true outlier signals.",
+                "preconditions": ["Legitimate analytical detection remains intact."],
+                "safety_rationale": "Preserves analytical monitoring integrity without suppressing true outlier signals.",
                 "rollback_available": True,
+            }
+
+        # 2b. Check for SLA turnaround breach
+        if "SLA_BREACH" in issue_type or issue_type == "SLA_BREACH_EXPOSURE":
+            return {
+                "issue_id": issue_id,
+                "run_id": run_id,
+                "record_id": record_id,
+                "issue_type": issue_type,
+                "layer": IssueLayer.SLA.value,
+                "issue_description": issue_description,
+                "evidence": sorted_evidence,
+                "root_cause": root_cause or "Statutory turnaround SLA deadline breached based on processing latency.",
+                "auto_fix_eligible": False,
+                "eligibility_reason": "SLA breaches are real-world operational turnaround delays. They require operations queue escalation and supervisory review, not algorithmic suppression.",
+                "decision_state": "MANUAL_REVIEW_REQUIRED",
+                "proposed_action": "MANUAL_REVIEW",
+                "preconditions": [],
+                "safety_rationale": "Ensures claims operations staff address the turnaround bottleneck directly.",
+                "rollback_available": False,
+            }
+
+        # 2c. Check for Quantity/Supply analysis discrepancy
+        if "QUANTITY_SUPPLY" in issue_type or issue_type == "QUANTITY_SUPPLY_ANALYSIS_DISCREPANCY":
+            return {
+                "issue_id": issue_id,
+                "run_id": run_id,
+                "record_id": record_id,
+                "issue_type": issue_type,
+                "layer": IssueLayer.QUANTITY_SUPPLY_ANALYSIS.value,
+                "issue_description": issue_description,
+                "evidence": sorted_evidence,
+                "root_cause": root_cause or "Dispense quantity or days supply exhibits dosage inconsistency.",
+                "auto_fix_eligible": False,
+                "eligibility_reason": "Clinical dispensing irregularities require licensed pharmacist or clinical reviewer audit.",
+                "decision_state": "MANUAL_REVIEW_REQUIRED",
+                "proposed_action": "MANUAL_REVIEW",
+                "preconditions": [],
+                "safety_rationale": "Prevents unauthorized alteration of prescribed clinical medication parameters.",
+                "rollback_available": False,
             }
 
         # 3. Check for unrecoverable missing source values (e.g. Missing Provider NPI with no source)
