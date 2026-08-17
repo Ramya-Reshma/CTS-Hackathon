@@ -1,21 +1,21 @@
-﻿import React, { useState } from 'react'
-import { useStore } from '../hooks/useStore'
-import { getAnomalies, getRunInfo, downloadResults } from '../services/api'
+import React, { useState } from 'react'
 import MedlyticsSidebar from '../components/MedlyticsSidebar'
 import MedlyticsHeader from '../components/MedlyticsHeader'
 import OverviewPage from '../components/pages/OverviewPage'
 import AnomalyPage from '../components/pages/AnomalyPage'
 import SLARiskPage from '../components/pages/SLARiskPage'
 import DataQualityPage from '../components/pages/DataQualityPage'
-import SLASummaryPage from '../components/pages/SLASummaryPage'
+import RecommendationPage from '../components/pages/RecommendationPage'
+import UploadsPage from '../components/pages/UploadsPage'
 import './MedlyticsApp.css'
 
 export const NAV_PAGES = [
-  { id: 'overview',  label: 'Overview',           icon: 'overview' },
-  { id: 'anomaly',   label: 'Anomaly Detection',  icon: 'anomaly' },
-  { id: 'sla',       label: 'SLA Risk',            icon: 'sla' },
-  { id: 'quality',   label: 'Data Quality',        icon: 'quality' },
-  { id: 'slasummary',label: 'SLA Summary',         icon: 'slasummary' },
+  { id: 'overview',       label: 'Overview',              icon: 'overview' },
+  { id: 'anomaly',        label: 'Anomaly Detection',     icon: 'anomaly' },
+  { id: 'sla',            label: 'SLA Risk',               icon: 'sla' },
+  { id: 'quality',        label: 'Data Quality',           icon: 'quality' },
+  { id: 'recommendation', label: 'Recommendation Engine',  icon: 'recommendation' },
+  { id: 'uploads',        label: 'Uploads',                icon: 'uploads' },
 ]
 
 export default function MedlyticsApp() {
@@ -23,11 +23,12 @@ export default function MedlyticsApp() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const pageMap = {
-    overview:   <OverviewPage />,
-    anomaly:    <AnomalyPage />,
-    sla:        <SLARiskPage />,
-    quality:    <DataQualityPage />,
-    slasummary: <SLASummaryPage />,
+    overview:       <OverviewPage onNavigateToUploads={() => setActivePage('uploads')} />,
+    anomaly:        <AnomalyPage />,
+    sla:            <SLARiskPage />,
+    quality:        <DataQualityPage />,
+    recommendation: <RecommendationPage />,
+    uploads:        <UploadsPage onNavigateToOverview={() => setActivePage('overview')} />,
   }
 
   return (

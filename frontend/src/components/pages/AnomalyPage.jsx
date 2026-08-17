@@ -1,12 +1,11 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { getAnomalyDetail } from '../../services/api'
-import { fmtLabel, fmtNum, fmtBool } from '../../utils/statusUtils'
-import Filters from '../Filters'
+import { fmtLabel, fmtNum, fmtPct } from '../../utils/statusUtils'
 import './shared-pages.css'
 
 export default function AnomalyPage() {
-  const { anomalies, statistics, isLoading, error } = useMedlyticsData()
+  const { anomalies, statistics, isLoading, error, currentRun } = useMedlyticsData()
   const [selectedId, setSelectedId] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -47,6 +46,27 @@ export default function AnomalyPage() {
     )
   }
 
+  // --- OVERALL POPULATION ANOMALY METRICS (from backend) ---
+  const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? anomalies.length ?? 0
+  const anomaliesCount = currentRun?.anomaly_count ?? statistics?.total_anomalies ?? anomalies.length ?? 0
+  const normalCount = Math.max(0, totalRecords - anomaliesCount)
+
+  const highCount = currentRun?.severity_summary?.high ?? statistics?.by_severity?.high ?? 0
+  const mediumCount = currentRun?.severity_summary?.medium ?? statistics?.by_severity?.medium ?? 0
+  const lowCount = currentRun?.severity_summary?.low ?? statistics?.by_severity?.low ?? 0
+
+  const anomalyRate = totalRecords > 0 ? (anomaliesCount / totalRecords) * 100 : 0
+  const normalPct = totalRecords > 0 ? (normalCount / totalRecords) * 100 : 100
+  const anomalyPct = totalRecords > 0 ? (anomaliesCount / totalRecords) * 100 : 0
+
+  // Count by model / signal from available records
+  const isoCount = statistics?.by_anomaly_type?.['Isolation Forest Anomaly'] ?? 
+                   statistics?.by_anomaly_type?.['Multivariate Anomaly'] ?? 
+                   (anomalies.filter(a => a.full_record?.ISO_Is_Anomaly).length || anomaliesCount)
+  const corrCount = anomalies.filter(a => a.full_record?.Correlation_Anomaly).length
+  const qsCount = anomalies.filter(a => a.full_record?.Quantity_Supply_Anomaly).length
+
+  // Filtered record list
   const filtered = anomalies.filter(a => {
     const matchesSev = !sevFilter || a.severity === sevFilter
     const matchesSearch = !searchTerm ||
@@ -56,36 +76,164 @@ export default function AnomalyPage() {
     return matchesSev && matchesSearch
   })
 
+  // Selected record data
   const full = selectedRecord?.full_record || {}
-  const signals = selectedRecord?.anomaly_signals || {}
+  const isAnomalous = full.ML_Is_Anomalous || full.ISO_Is_Anomaly || selectedRecord?.severity != null
+  const anomalyStatusText = isAnomalous ? 'ANOMALOUS' : 'NORMAL'
 
   return (
     <div className="ml-page">
+      {/* Page Header */}
       <div className="ml-page-heading">
         <h1>Anomaly Detection</h1>
-        <p>ML-based identification of unusual claim behavior across multiple statistical and isolation models.</p>
+        <p>Statistical anomaly detection and multivariate behavioral monitoring across the current healthcare record population.</p>
       </div>
 
-      {/* Record Selector and Details Grid */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION 1: OVERALL ANOMALY SUMMARY (POPULATION LEVEL)      */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="ml-section-label">Overall Anomaly Summary</div>
+
+      {/* 6 Summary Cards */}
+      <div className="ml-kpi-strip" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+        <div className="ml-kpi-tile">
+          <span className="ml-kpi-tile-label">Total Records</span>
+          <span className="ml-kpi-tile-value">{totalRecords.toLocaleString()}</span>
+          <span className="ml-kpi-tile-sub">Monitored population</span>
+        </div>
+        <div className="ml-kpi-tile">
+          <span className="ml-kpi-tile-label">Anomalous</span>
+          <span className="ml-kpi-tile-value text-danger">{anomaliesCount.toLocaleString()}</span>
+          <span className="ml-kpi-tile-sub">Statistically unusual</span>
+        </div>
+        <div className="ml-kpi-tile">
+          <span className="ml-kpi-tile-label">Normal</span>
+          <span className="ml-kpi-tile-value text-success">{normalCount.toLocaleString()}</span>
+          <span className="ml-kpi-tile-sub">Within baseline</span>
+        </div>
+        <div className="ml-kpi-tile">
+          <span className="ml-kpi-tile-label">High Severity</span>
+          <span className="ml-kpi-tile-value text-danger">{highCount.toLocaleString()}</span>
+          <span className="ml-kpi-tile-sub">Priority 1-2 incidents</span>
+        </div>
+        <div className="ml-kpi-tile">
+          <span className="ml-kpi-tile-label">Medium Severity</span>
+          <span className="ml-kpi-tile-value text-warning">{mediumCount.toLocaleString()}</span>
+          <span className="ml-kpi-tile-sub">Priority 3 anomalies</span>
+        </div>
+        <div className="ml-kpi-tile">
+          <span className="ml-kpi-tile-label">Low Severity</span>
+          <span className="ml-kpi-tile-value text-success">{lowCount.toLocaleString()}</span>
+          <span className="ml-kpi-tile-sub">Minor variations</span>
+        </div>
+      </div>
+
+      {/* Anomaly Detection & Population Overview Card */}
+      <div className="ml-info-card" style={{ marginTop: '12px' }}>
+        <div className="ml-info-card-header">
+          <div className="ml-info-card-title">
+            <h2>Anomaly Detection &amp; Population Overview</h2>
+            <p>Overall statistical dispersion, detection models, and severity distribution</p>
+          </div>
+        </div>
+        <div className="ml-field-grid">
+          <div className="ml-field-row">
+            <span className="ml-field-label">Anomaly Detection Rate</span>
+            <span className={`ml-field-value ${anomalyRate > 20 ? 'text-warning' : 'text-success'}`}>{fmtPct(anomalyRate)}</span>
+          </div>
+          <div className="ml-field-row">
+            <span className="ml-field-label">Isolation Forest Anomalies</span>
+            <span className="ml-field-value">{isoCount.toLocaleString()}</span>
+          </div>
+          <div className="ml-field-row">
+            <span className="ml-field-label">Correlation Residual Anomalies</span>
+            <span className="ml-field-value">{corrCount.toLocaleString()}</span>
+          </div>
+          <div className="ml-field-row">
+            <span className="ml-field-label">Quantity / Supply Anomalies</span>
+            <span className="ml-field-value">{qsCount.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Visual Distribution Bars */}
+        <div style={{ padding: '16px 20px 18px', borderTop: '1px solid var(--border-light)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--gray-500)', marginBottom: '8px', letterSpacing: '0.6px' }}>
+              Population Classification
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 45px', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--gray-600)' }}>Normal</span>
+                <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${normalPct}%`, height: '100%', background: 'var(--green-600)', borderRadius: '4px' }} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--gray-600)', textAlign: 'right' }}>{normalCount}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 45px', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--gray-600)' }}>Anomalous</span>
+                <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${anomalyPct}%`, height: '100%', background: 'var(--red-600)', borderRadius: '4px' }} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--red-700)', textAlign: 'right' }}>{anomaliesCount}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--gray-500)', marginBottom: '8px', letterSpacing: '0.6px' }}>
+              Severity Breakdown
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 45px', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--gray-600)' }}>High</span>
+                <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: anomaliesCount > 0 ? `${(highCount / anomaliesCount) * 100}%` : '0%', height: '100%', background: 'var(--red-600)', borderRadius: '4px' }} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--red-700)', textAlign: 'right' }}>{highCount}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 45px', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--gray-600)' }}>Medium</span>
+                <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: anomaliesCount > 0 ? `${(mediumCount / anomaliesCount) * 100}%` : '0%', height: '100%', background: 'var(--amber-600)', borderRadius: '4px' }} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--amber-700)', textAlign: 'right' }}>{mediumCount}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 45px', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--gray-600)' }}>Low</span>
+                <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: anomaliesCount > 0 ? `${(lowCount / anomaliesCount) * 100}%` : '0%', height: '100%', background: 'var(--green-600)', borderRadius: '4px' }} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--gray-600)', textAlign: 'right' }}>{lowCount}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION 2: RECORDS UNDER MONITORING (INDIVIDUAL LEVEL)     */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="ml-section-label" style={{ marginTop: '16px' }}>Records Under Monitoring</div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
         
-        {/* Left: Record List Selector */}
+        {/* Left: Record Selection Panel */}
         <div className="ml-info-card" style={{ height: 'fit-content' }}>
           <div className="ml-info-card-header">
             <div className="ml-info-card-title">
               <h2>Monitored Records</h2>
-              <p>Select a record to inspect anomaly signals</p>
+              <p>Select record to inspect ML signals</p>
             </div>
           </div>
           <div style={{ padding: '12px' }}>
             <input
               type="text"
-              placeholder="Search records..."
+              placeholder="Search record ID..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{ width: '100%', marginBottom: '8px' }}
             />
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
               <button
                 className={`filter-button ${!sevFilter ? 'active' : ''}`}
                 style={{ flex: 1, padding: '4px 6px', fontSize: '11px' }}
@@ -116,7 +264,7 @@ export default function AnomalyPage() {
               </button>
             </div>
           </div>
-          <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '480px', overflowY: 'auto' }}>
             {filtered.length === 0 ? (
               <div className="ml-empty">No records matching filter</div>
             ) : (
@@ -152,7 +300,7 @@ export default function AnomalyPage() {
           </div>
         </div>
 
-        {/* Right: Selected Anomaly Details */}
+        {/* Right: Individual Record Anomaly Details */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {detailLoading ? (
             <div className="loading-container">
@@ -165,7 +313,7 @@ export default function AnomalyPage() {
               <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.8px' }}>
-                    Record Identification
+                    Record Under Monitoring
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 700, color: 'var(--navy-900)' }}>
@@ -175,9 +323,9 @@ export default function AnomalyPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--gray-500)' }}>Status:</span>
-                  <span className={`ml-status-badge ${full.ML_Is_Anomalous || full.ISO_Is_Anomaly ? 'ml-status-anomalous' : 'ml-status-normal'}`}>
-                    {full.ML_Is_Anomalous || full.ISO_Is_Anomaly ? 'ANOMALOUS' : 'NORMAL'}
+                  <span style={{ fontSize: '12px', color: 'var(--gray-500)' }}>Anomaly Status:</span>
+                  <span className={`ml-status-badge ${isAnomalous ? 'ml-status-anomalous' : 'ml-status-normal'}`}>
+                    {anomalyStatusText}
                   </span>
                 </div>
               </div>
@@ -189,27 +337,27 @@ export default function AnomalyPage() {
                     <h2>Anomaly Detection Information</h2>
                     <p>Statistical and machine learning anomaly indicators</p>
                   </div>
-                  <span className={`ml-status-badge ${full.ML_Is_Anomalous || full.ISO_Is_Anomaly ? 'ml-status-anomalous' : 'ml-status-normal'}`}>
-                    {full.ML_Is_Anomalous || full.ISO_Is_Anomaly ? 'ANOMALOUS' : 'NORMAL'}
+                  <span className={`ml-status-badge ${isAnomalous ? 'ml-status-anomalous' : 'ml-status-normal'}`}>
+                    {anomalyStatusText}
                   </span>
                 </div>
                 <div className="ml-field-grid">
                   <div className="ml-field-row">
                     <span className="ml-field-label">Detection Model</span>
-                    <span className="ml-field-value">Isolation Forest + Robust Statistics</span>
+                    <span className="ml-field-value">Isolation Forest + Robust Residuals</span>
                   </div>
                   <div className="ml-field-row">
                     <span className="ml-field-label">Anomaly Type</span>
-                    <span className="ml-field-value">{selectedRecord.anomaly_type || 'ML Multivariate'}</span>
+                    <span className="ml-field-value">{selectedRecord.anomaly_type || full.anomaly_type || 'Multivariate Anomaly'}</span>
                   </div>
                   <div className="ml-field-row">
-                    <span className="ml-field-label">Raw Score</span>
+                    <span className="ml-field-label">Raw Anomaly Score</span>
                     <span className="ml-field-value mono">
                       {full.ISO_Raw_Score != null ? fmtNum(full.ISO_Raw_Score, 4) : 'Not available'}
                     </span>
                   </div>
                   <div className="ml-field-row">
-                    <span className="ml-field-label">Severity</span>
+                    <span className="ml-field-label">Anomaly Severity</span>
                     <span className="ml-field-value">
                       {full.ISO_Severity_0to1 != null ? fmtNum(full.ISO_Severity_0to1, 2) : (selectedRecord.severity || 'Not available')}
                     </span>
@@ -233,7 +381,7 @@ export default function AnomalyPage() {
                     </span>
                   </div>
                   <div className="ml-field-row">
-                    <span className="ml-field-label">ML Signals Count</span>
+                    <span className="ml-field-label">ML Anomaly Signal Count</span>
                     <span className="ml-field-value">
                       {full.ML_Anomaly_Signal_Count != null ? full.ML_Anomaly_Signal_Count : 1}
                     </span>
@@ -245,8 +393,8 @@ export default function AnomalyPage() {
               <div className="ml-info-card">
                 <div className="ml-info-card-header">
                   <div className="ml-info-card-title">
-                    <h2>Detection Signals</h2>
-                    <p>Evidence identified by detection pipeline</p>
+                    <h2>Detection Signals &amp; Evidence</h2>
+                    <p>Evidence identified across statistical and behavioral models</p>
                   </div>
                 </div>
                 <div className="ml-info-card-body">
@@ -254,7 +402,7 @@ export default function AnomalyPage() {
                     {full.ISO_Is_Anomaly && (
                       <div className="ml-signal-item">
                         <span className="ml-signal-dot" />
-                        <div>Isolation Forest identified an unusual multivariate distribution pattern (Score: {fmtNum(full.ISO_Raw_Score, 4)})</div>
+                        <div>Isolation Forest identified an unusual multivariate distribution pattern (Raw Score: {fmtNum(full.ISO_Raw_Score, 4)})</div>
                       </div>
                     )}
                     {full.Correlation_Anomaly && (
@@ -269,7 +417,7 @@ export default function AnomalyPage() {
                         <div>Quantity Dispensed vs Days Supply discrepancy detected (Residual: {fmtNum(full.Quantity_Supply_Residual, 4)})</div>
                       </div>
                     )}
-                    {selectedRecord.primary_signal && (
+                    {selectedRecord.primary_signal && selectedRecord.primary_signal !== 'None' && (
                       <div className="ml-signal-item">
                         <span className="ml-signal-dot" />
                         <div><strong>Primary Signal:</strong> {selectedRecord.primary_signal}</div>
@@ -289,7 +437,7 @@ export default function AnomalyPage() {
               </div>
             </>
           ) : (
-            <div className="ml-empty">Select a record from the left to view details.</div>
+            <div className="ml-empty">Select a record from the list to view anomaly parameters.</div>
           )}
         </div>
 

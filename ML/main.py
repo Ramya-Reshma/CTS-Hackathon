@@ -80,8 +80,9 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
         traceback.print_exc()
 
     # 6. SLA / Temporal Monitoring (run after Data Quality)
+    sla_output = None
     try:
-        sla_mon.run_sla_monitoring(
+        sla_output = sla_mon.run_sla_monitoring(
             df,
             config_overrides={"output_dir": str(output_path)},
         )
@@ -89,6 +90,13 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
         import traceback
         print("SLA / Temporal Monitoring step failed:")
         traceback.print_exc()
+    
+    # Build record-level SLA lookup from the existing SLA output
+    sla_record_map = {}
+    if isinstance(sla_output, dict) and "record_level_findings" in sla_output and isinstance(sla_output["record_level_findings"], list):
+        for rf in sla_output["record_level_findings"]:
+            if isinstance(rf, dict) and "record_id" in rf:
+                sla_record_map[str(rf["record_id"]).strip().upper()] = rf
     
     # Extract the requested output JSON format for each record
     results = []
@@ -127,8 +135,12 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
             anomaly_type = "Normal"
             primary_signal = "None"
         
+        rec_id_str = str(row.get("Record_ID", ""))
+        rec_id_clean = rec_id_str.strip().upper()
+        sla_finding = sla_record_map.get(rec_id_clean, {})
+        
         result = {
-            "Record_ID": str(row.get("Record_ID", "")),
+            "Record_ID": rec_id_str,
             "Record_Type": str(row.get("Record_Type", "")),
             "BENE_ID": str(row.get("BENE_ID", "")),
             "Provider_NPI": str(row.get("Provider_NPI", "")),
@@ -142,7 +154,18 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
             "ML_Anomaly_Signal_Count": signal_count,
             "ML_Is_Anomalous": is_anomalous,
             "anomaly_type": anomaly_type,
-            "primary_signal": primary_signal
+            "primary_signal": primary_signal,
+            # Propagate existing SLA output fields from SLA engine
+            "SLA_Applicable": sla_finding.get("temporal_validity") != "NOT_ASSESSABLE" if sla_finding else True,
+            "SLA_Target_Days": sla_finding.get("sla_target_days", safe_float(row.get("SLA_Target_Days"))),
+            "Processing_Latency_Days": sla_finding.get("processing_latency_days", safe_float(row.get("Processing_Latency_Days"))),
+            "SLA_Status": sla_finding.get("status"),
+            "SLA_Risk": sla_finding.get("sla_risk"),
+            "SLA_Breach": sla_finding.get("sla_breach"),
+            "SLA_Utilization": sla_finding.get("sla_utilization"),
+            "Temporal_Validity": sla_finding.get("temporal_validity"),
+            "SLA_Reason": sla_finding.get("reason"),
+            "Record_SLA_Breach_Numeric": int(row.get("Record_SLA_Breach_Numeric", 1 if sla_finding.get("sla_breach") is True else 0)) if pd.notna(row.get("Record_SLA_Breach_Numeric")) else (1 if sla_finding.get("sla_breach") is True else 0),
         }
         results.append(result)
     

@@ -28,6 +28,7 @@ class AnomalyResultBase(BaseModel):
     possible_causes: Optional[List[str]] = None
     evidence: Optional[List[str]] = None
     anomaly_signals: Optional[Dict[str, Any]] = None
+    full_record: Optional[Dict[str, Any]] = None
 
 
 class AnomalyResultResponse(AnomalyResultBase):
@@ -143,3 +144,4 @@ class RunStatistics(BaseModel):
     average_confidence: Optional[float] = None
     overall_data_quality_score: Optional[float] = None
     overall_risk_level: Optional[str] = None
+    sla_summary: Optional[Dict[str, Any]] = None

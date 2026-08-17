@@ -84,6 +84,23 @@ def _load_quality_summary(report_json_path: str) -> Dict[str, Any]:
         return {}
 
 
+def _load_sla_summary(report_json_path: str) -> Dict[str, Any]:
+    """Load population SLA summary from the sibling sla_temporal_findings.json if it exists."""
+    report_dir = Path(report_json_path).resolve().parent
+    sla_path = report_dir / "sla_temporal_findings.json"
+    if not sla_path.exists():
+        return {}
+
+    try:
+        payload = json.loads(sla_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload.get("summary", {})
+    except Exception as e:
+        logger.warning(f"[DB] Failed to load SLA summary: {e}")
+        return {}
+
+
 def _calculate_confidence(record: Dict[str, Any], fallback: float = 0.5) -> float:
     """Calculate a confidence score from the anomaly signal profile."""
     if isinstance(record.get("_metadata"), dict):
@@ -314,7 +331,12 @@ def save_analysis_run(
 
         # Keep total input records separate from detected anomalies.
         total_records = len(source_records)
-        anomalies = [r for r in source_records if bool(r.get("ML_Is_Anomalous", False))]
+        anomalies = [
+            r for r in source_records
+            if bool(r.get("ML_Is_Anomalous", False))
+            or bool(r.get("SLA_Breach", False))
+            or (r.get("SLA_Status") == "BREACHED")
+        ]
         synthesis_lookup = _load_synthesis_lookup(report_json_path)
 
         # Count records and severities using synthesis severity when available,
@@ -546,6 +568,8 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     overall_quality_score = quality_summary.get("overall_quality_score")
     overall_risk_level = quality_summary.get("overall_risk_level")
 
+    sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
+
     response = {
         "total_records": run.total_records,
         "total_anomalies": run.anomaly_count,
@@ -563,6 +587,8 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
         response["overall_data_quality_score"] = round(float(overall_quality_score), 2)
     if overall_risk_level is not None:
         response["overall_risk_level"] = overall_risk_level
+    if sla_summary:
+        response["sla_summary"] = sla_summary
 
     return response
 

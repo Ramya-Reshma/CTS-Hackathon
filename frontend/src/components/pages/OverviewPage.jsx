@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { statusClass, fmtLabel, fmtNum, fmtPct, fmtBool } from '../../utils/statusUtils'
 import AnomalyDetail from '../AnomalyDetail'
@@ -30,6 +30,9 @@ export default function OverviewPage() {
   const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? 0
   const dqScore = statistics?.overall_data_quality_score
   const overallRisk = statistics?.overall_risk_level || 'NORMAL'
+  const slaSummary = statistics?.sla_summary || null
+  const slaBreaches = slaSummary?.records_breached ?? 0
+  const slaAtRisk = slaSummary?.records_at_risk ?? 0
 
   return (
     <div className="ml-page">
@@ -59,12 +62,12 @@ export default function OverviewPage() {
         <div className="ml-summary-card sla">
           <span className="ml-summary-card-label">SLA Risk Status</span>
           <div className="ml-summary-card-status">
-            <span className="ml-status-badge ml-status-at-risk">
-              {overallRisk ? overallRisk.toUpperCase() : 'MONITORED'}
+            <span className={`ml-status-badge ${slaBreaches > 0 ? 'ml-status-breached' : (slaAtRisk > 0 ? 'ml-status-at-risk' : 'ml-status-on-track')}`}>
+              {slaBreaches > 0 ? 'BREACHED' : (slaAtRisk > 0 ? 'AT RISK' : 'ON TRACK')}
             </span>
           </div>
           <span className="ml-summary-card-desc">
-            Population SLA monitoring active
+            {slaBreaches > 0 ? `${slaBreaches.toLocaleString()} confirmed breaches in population` : 'All assessable records within SLA latency'}
           </span>
         </div>
 

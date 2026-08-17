@@ -1,44 +1,44 @@
 {
   "method": "Z-score (threshold=3.0) and IQR (multiplier=1.5), computed within each Record_Type group",
   "summary": {
-    "zscore_anomalies": 10,
-    "iqr_anomalies": 15,
-    "combined_anomalies": 15,
-    "combined_anomalies_pct": 6.0
+    "zscore_anomalies": 3,
+    "iqr_anomalies": 4,
+    "combined_anomalies": 5,
+    "combined_anomalies_pct": 10.0
   },
   "field_level_results": [
     {
       "record_type": "MEDICAL_CLAIM",
       "field": "Billed_Amount",
-      "mean": 30705.38,
-      "std": 152437.28,
-      "iqr_lower_bound": -93.53,
-      "iqr_upper_bound": 2783.16,
-      "zscore_flagged": 5,
-      "iqr_flagged": 10,
-      "combined_flagged": 10
+      "mean": 33220.1,
+      "std": 154238.75,
+      "iqr_lower_bound": -10305.96,
+      "iqr_upper_bound": 19935.77,
+      "zscore_flagged": 1,
+      "iqr_flagged": 1,
+      "combined_flagged": 1
     },
     {
       "record_type": "MEDICAL_CLAIM",
       "field": "Allowed_Amount",
-      "mean": 1352.96,
-      "std": 1317.66,
-      "iqr_lower_bound": -74.85,
-      "iqr_upper_bound": 2226.56,
-      "zscore_flagged": 10,
-      "iqr_flagged": 10,
-      "combined_flagged": 10
+      "mean": 3139.14,
+      "std": 3035.17,
+      "iqr_lower_bound": -6955.48,
+      "iqr_upper_bound": 13799.8,
+      "zscore_flagged": 0,
+      "iqr_flagged": 0,
+      "combined_flagged": 0
     },
     {
       "record_type": "MEDICAL_CLAIM",
       "field": "Paid_Amount",
-      "mean": 1352.96,
-      "std": 1317.66,
-      "iqr_lower_bound": -74.85,
-      "iqr_upper_bound": 2226.56,
-      "zscore_flagged": 10,
-      "iqr_flagged": 10,
-      "combined_flagged": 10
+      "mean": 3580.78,
+      "std": 3706.65,
+      "iqr_lower_bound": -8822.54,
+      "iqr_upper_bound": 16911.56,
+      "zscore_flagged": 0,
+      "iqr_flagged": 0,
+      "combined_flagged": 0
     },
     {
       "record_type": "MEDICAL_CLAIM",
@@ -54,10 +54,10 @@
     {
       "record_type": "MEDICAL_CLAIM",
       "field": "Processing_Latency_Days",
-      "mean": 0.32,
-      "std": 3.51,
-      "iqr_lower_bound": -10.5,
-      "iqr_upper_bound": 11.5,
+      "mean": 19.09,
+      "std": 5.66,
+      "iqr_lower_bound": 16.5,
+      "iqr_upper_bound": 16.5,
       "zscore_flagged": 0,
       "iqr_flagged": 0,
       "combined_flagged": 0
@@ -65,90 +65,79 @@
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Billed_Amount",
-      "mean": 547.67,
-      "std": 430.84,
-      "iqr_lower_bound": -689.37,
-      "iqr_upper_bound": 1734.71,
-      "zscore_flagged": 0,
-      "iqr_flagged": 0,
-      "combined_flagged": 0
+      "mean": 1632.42,
+      "std": 3365.39,
+      "iqr_lower_bound": -1208.42,
+      "iqr_upper_bound": 2796.57,
+      "zscore_flagged": 1,
+      "iqr_flagged": 1,
+      "combined_flagged": 1
     },
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Allowed_Amount",
-      "mean": 408.76,
-      "std": 310.54,
-      "iqr_lower_bound": -476.13,
-      "iqr_upper_bound": 1297.74,
-      "zscore_flagged": 0,
-      "iqr_flagged": 0,
-      "combined_flagged": 0
+      "mean": 1074.73,
+      "std": 2143.53,
+      "iqr_lower_bound": -706.0,
+      "iqr_upper_bound": 1746.15,
+      "zscore_flagged": 1,
+      "iqr_flagged": 1,
+      "combined_flagged": 1
     },
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Paid_Amount",
-      "mean": 474.26,
-      "std": 412.7,
-      "iqr_lower_bound": -527.38,
-      "iqr_upper_bound": 1383.14,
-      "zscore_flagged": 0,
-      "iqr_flagged": 5,
-      "combined_flagged": 5
+      "mean": 1371.77,
+      "std": 2602.19,
+      "iqr_lower_bound": -1552.62,
+      "iqr_upper_bound": 3157.2,
+      "zscore_flagged": 1,
+      "iqr_flagged": 1,
+      "combined_flagged": 1
     },
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Patient_Responsibility",
-      "mean": 138.91,
-      "std": 133.71,
-      "iqr_lower_bound": -239.85,
-      "iqr_upper_bound": 532.02,
-      "zscore_flagged": 0,
-      "iqr_flagged": 0,
-      "combined_flagged": 0
+      "mean": 363.26,
+      "std": 674.23,
+      "iqr_lower_bound": -242.58,
+      "iqr_upper_bound": 617.33,
+      "zscore_flagged": 1,
+      "iqr_flagged": 1,
+      "combined_flagged": 1
     },
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Days_Supply",
-      "mean": 42.86,
-      "std": 18.82,
-      "iqr_lower_bound": -15.0,
-      "iqr_upper_bound": 105.0,
+      "mean": 72.86,
+      "std": 60.82,
+      "iqr_lower_bound": -48.75,
+      "iqr_upper_bound": 161.25,
       "zscore_flagged": 0,
-      "iqr_flagged": 0,
-      "combined_flagged": 0
+      "iqr_flagged": 3,
+      "combined_flagged": 3
     },
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Quantity_Dispensed",
-      "mean": 46.86,
-      "std": 21.77,
-      "iqr_lower_bound": -34.5,
-      "iqr_upper_bound": 137.5,
+      "mean": 143.36,
+      "std": 193.97,
+      "iqr_lower_bound": -31.0,
+      "iqr_upper_bound": 145.0,
       "zscore_flagged": 0,
-      "iqr_flagged": 0,
-      "combined_flagged": 0
+      "iqr_flagged": 3,
+      "combined_flagged": 3
     },
     {
       "record_type": "PHARMACY_CLAIM",
       "field": "Processing_Latency_Days",
-      "mean": 2.14,
-      "std": 1.47,
-      "iqr_lower_bound": -3.5,
-      "iqr_upper_bound": 8.5,
-      "zscore_flagged": 0,
+      "mean": -70.24,
+      "std": 267.31,
+      "iqr_lower_bound": 1.2,
+      "iqr_upper_bound": 1.2,
+      "zscore_flagged": 1,
       "iqr_flagged": 0,
-      "combined_flagged": 0
-    },
-    {
-      "record_type": "PRIOR_AUTH",
-      "field": "Processing_Latency_Days",
-      "mean": 9.43,
-      "std": 3.79,
-      "iqr_lower_bound": -7.0,
-      "iqr_upper_bound": 25.0,
-      "zscore_flagged": 0,
-      "iqr_flagged": 0,
-      "combined_flagged": 0
+      "combined_flagged": 1
     }
   ]
 }

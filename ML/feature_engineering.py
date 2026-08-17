@@ -19,7 +19,8 @@ def run_feature_engineering(df):
     date_cols = ['Service_Date', 'Service_End_Date', 'Submission_Date',
                  'Processed_Date', 'Decision_Date', 'Ingestion_Timestamp']
     for c in date_cols:
-        df[c] = pd.to_datetime(df[c], errors='coerce')
+        if c in df.columns:
+            df[c] = pd.to_datetime(df[c], errors='coerce')
     
     # Derive a clean "Batch_Date" from Batch_ID (format: BATCH_YYYYMMDD)
     df['Batch_Date'] = pd.to_datetime(
@@ -46,6 +47,13 @@ def run_feature_engineering(df):
         on='Provider_NPI', how='left'
     )
     
+    # Ensure SLA_Breach_Flag exists if not present in raw input
+    if 'SLA_Breach_Flag' not in df.columns:
+        if 'Processing_Latency_Days' in df.columns and 'SLA_Target_Days' in df.columns:
+            df['SLA_Breach_Flag'] = (df['Processing_Latency_Days'] > df['SLA_Target_Days']).map({True: 'Y', False: 'N'})
+        else:
+            df['SLA_Breach_Flag'] = 'N'
+
     # ============================================================
     # FEATURE 2: Batch-level daily volume & SLA-breach-rate trend
     # (rolling 7-day average, compared against each batch's own rate)
