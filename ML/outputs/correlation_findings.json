@@ -25,7 +25,7 @@
     {
       "Record_ID": "MC104227",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010254809.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1098.4276786812748,
       "Quantity_Supply_Anomaly": false,
@@ -36,7 +36,7 @@
     {
       "Record_ID": "MC104693",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010255380.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 3745.1379083678776,
       "Quantity_Supply_Anomaly": false,
@@ -47,7 +47,7 @@
     {
       "Record_ID": "MC101709",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010258952.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1704.225465475198,
       "Quantity_Supply_Anomaly": false,
@@ -58,7 +58,7 @@
     {
       "Record_ID": "MC101377",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010260449.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": -1684.302341143129,
       "Quantity_Supply_Anomaly": false,
@@ -69,7 +69,7 @@
     {
       "Record_ID": "MC102574",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010257965.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1096.687315305597,
       "Quantity_Supply_Anomaly": false,
@@ -80,7 +80,7 @@
     {
       "Record_ID": "MC102054",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010257292.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1889.3102740706859,
       "Quantity_Supply_Anomaly": false,
@@ -91,7 +91,7 @@
     {
       "Record_ID": "MC101404",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010255433.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": -2048.4100436906806,
       "Quantity_Supply_Anomaly": false,
@@ -102,7 +102,7 @@
     {
       "Record_ID": "PH200987",
       "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010268624.0",
       "Correlation_Anomaly": false,
       "Correlation_Residual": -5.354299031097526,
       "Quantity_Supply_Anomaly": true,
@@ -113,7 +113,7 @@
     {
       "Record_ID": "MC101925",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010264781.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1140.7966369821777,
       "Quantity_Supply_Anomaly": false,
@@ -124,7 +124,7 @@
     {
       "Record_ID": "MC103047",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010262530.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 2041.8435927995283,
       "Quantity_Supply_Anomaly": false,
@@ -135,7 +135,7 @@
     {
       "Record_ID": "MC104281",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010263532.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1600.8023666898848,
       "Quantity_Supply_Anomaly": false,
@@ -146,7 +146,7 @@
     {
       "Record_ID": "MC102582",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010255518.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 6376.221254675585,
       "Quantity_Supply_Anomaly": false,
@@ -157,7 +157,7 @@
     {
       "Record_ID": "MC104054",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010263476.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1261.3134037784785,
       "Quantity_Supply_Anomaly": false,
@@ -168,7 +168,7 @@
     {
       "Record_ID": "MC102754",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010261476.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1464.0656262583616,
       "Quantity_Supply_Anomaly": false,
@@ -179,7 +179,7 @@
     {
       "Record_ID": "MC102277",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010256959.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1580.970505867012,
       "Quantity_Supply_Anomaly": false,
@@ -190,7 +190,7 @@
     {
       "Record_ID": "PH202431",
       "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010269286.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1601.577176587573,
       "Quantity_Supply_Anomaly": false,
@@ -201,7 +201,7 @@
     {
       "Record_ID": "PH201242",
       "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010272653.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": -2152.8799326904546,
       "Quantity_Supply_Anomaly": false,
@@ -212,7 +212,7 @@
     {
       "Record_ID": "MC102333",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010259405.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": 1473.4277069191614,
       "Quantity_Supply_Anomaly": false,
@@ -223,7 +223,7 @@
     {
       "Record_ID": "MC102114",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010255340.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": -1242.7903150302122,
       "Quantity_Supply_Anomaly": false,
@@ -234,7 +234,7 @@
     {
       "Record_ID": "MC103699",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000000000000.0",
+      "BENE_ID": "-10000010259908.0",
       "Correlation_Anomaly": true,
       "Correlation_Residual": -2377.947274754164,
       "Quantity_Supply_Anomaly": false,

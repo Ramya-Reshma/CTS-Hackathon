@@ -102,6 +102,26 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
         signal_count = sum([iso_anomaly, corr_anomaly, qs_anomaly])
         is_anomalous = signal_count > 0
         
+        stat_anomaly = bool(row.get("Stat_Is_Anomalous", False))
+        stat_fields = row.get("Stat_Anomaly_Fields", [])
+        has_stat_fields = bool(stat_fields) and (len(stat_fields) > 0 if isinstance(stat_fields, (list, tuple)) else str(stat_fields) not in ("", "nan", "[]"))
+        
+        if stat_anomaly and has_stat_fields:
+            anomaly_type = "Statistical Anomaly"
+            primary_signal = stat_fields
+        elif corr_anomaly:
+            anomaly_type = "Correlation Anomaly"
+            primary_signal = "Paid_Amount vs Allowed_Amount"
+        elif qs_anomaly:
+            anomaly_type = "Quantity/Supply Anomaly"
+            primary_signal = "Quantity_Dispensed vs Days_Supply"
+        elif iso_anomaly:
+            anomaly_type = "Multivariate Anomaly"
+            primary_signal = "Isolation Forest Multi-dimensional"
+        else:
+            anomaly_type = "Normal"
+            primary_signal = "None"
+        
         result = {
             "Record_ID": str(row.get("Record_ID", "")),
             "Record_Type": str(row.get("Record_Type", "")),
@@ -115,7 +135,9 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
             "Quantity_Supply_Anomaly": qs_anomaly,
             "Quantity_Supply_Residual": safe_float(row.get("Quantity_Supply_Residual")),
             "ML_Anomaly_Signal_Count": signal_count,
-            "ML_Is_Anomalous": is_anomalous
+            "ML_Is_Anomalous": is_anomalous,
+            "anomaly_type": anomaly_type,
+            "primary_signal": primary_signal
         }
         results.append(result)
     
