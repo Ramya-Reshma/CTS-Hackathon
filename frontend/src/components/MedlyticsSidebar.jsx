@@ -37,9 +37,13 @@ const icons = {
       <line x1="12" y1="3" x2="12" y2="15"/>
     </svg>
   ),
-}
+import MedlyticsLogo from './MedlyticsLogo'
 
 export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose, user, onLogout }) {
+  // Analytical workflow items vs administrative uploads
+  const workflowPages = NAV_PAGES.filter(p => p.id !== 'uploads')
+  const uploadsPage = NAV_PAGES.find(p => p.id === 'uploads')
+
   return (
     <>
       {/* Mobile overlay */}
@@ -47,21 +51,18 @@ export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose
 
       <aside className={`medlytics-sidebar${open ? ' open' : ''}`}>
         {/* Brand */}
-        <div className="sidebar-brand">
-          <div className="sidebar-logo">
-            <span className="sidebar-logo-m">M</span>
-          </div>
-          <div className="sidebar-brand-text">
-            <span className="sidebar-product-name">MEDLYTICS</span>
-            <span className="sidebar-product-sub">Healthcare Intelligence</span>
-          </div>
+        <div className="sidebar-brand" style={{ padding: '20px 18px 16px', display: 'flex', alignItems: 'center' }}>
+          <MedlyticsLogo size={32} showText={true} textColor="#f8fafc" />
         </div>
 
         <div className="sidebar-divider" />
 
-        {/* Navigation */}
-        <nav className="sidebar-nav" role="navigation" aria-label="Main navigation">
-          {NAV_PAGES.map(page => (
+        {/* Core Analytical Workflow Navigation */}
+        <nav className="sidebar-nav" role="navigation" aria-label="Main navigation" style={{ flex: 1 }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#64748b', padding: '8px 16px 4px' }}>
+            Monitoring & Operations
+          </div>
+          {workflowPages.map(page => (
             <button
               key={page.id}
               className={`sidebar-nav-item${activePage === page.id ? ' active' : ''}`}
@@ -73,6 +74,25 @@ export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose
               {activePage === page.id && <span className="sidebar-active-bar" />}
             </button>
           ))}
+
+          {/* Administrative Ingestion / Uploads Section (LAST) */}
+          {uploadsPage && (
+            <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#64748b', padding: '0 16px 6px' }}>
+                Data Administration
+              </div>
+              <button
+                key={uploadsPage.id}
+                className={`sidebar-nav-item${activePage === uploadsPage.id ? ' active' : ''}`}
+                onClick={() => onNavigate(uploadsPage.id)}
+                aria-current={activePage === uploadsPage.id ? 'page' : undefined}
+              >
+                <span className="sidebar-nav-icon">{icons[uploadsPage.icon]}</span>
+                <span className="sidebar-nav-label">{uploadsPage.label}</span>
+                {activePage === uploadsPage.id && <span className="sidebar-active-bar" />}
+              </button>
+            </div>
+          )}
         </nav>
 
         <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

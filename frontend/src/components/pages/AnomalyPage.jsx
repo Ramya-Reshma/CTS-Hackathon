@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { getAnomalyDetail } from '../../services/api'
 import { fmtLabel, fmtNum, fmtPct } from '../../utils/statusUtils'
+import { exportAnomalyReportPDF } from '../../utils/pdfExport'
 import './shared-pages.css'
 
 export default function AnomalyPage() {
@@ -11,6 +12,8 @@ export default function AnomalyPage() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sevFilter, setSevFilter] = useState(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
 
   // Auto-select first anomaly when list is loaded
   useEffect(() => {
@@ -28,6 +31,21 @@ export default function AnomalyPage() {
       .catch(err => console.error('Failed to load anomaly detail:', err))
       .finally(() => setDetailLoading(false))
   }, [selectedId])
+
+  const handleDownloadReport = () => {
+    setExporting(true)
+    setExportSuccess(false)
+    try {
+      exportAnomalyReportPDF({ runInfo: currentRun, statistics, anomalies })
+      setExportSuccess(true)
+      setTimeout(() => setExportSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to export anomaly report:', err)
+      alert('Unable to generate anomaly report.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -84,9 +102,35 @@ export default function AnomalyPage() {
   return (
     <div className="ml-page">
       {/* Page Header */}
-      <div className="ml-page-heading">
-        <h1>Anomaly Detection</h1>
-        <p>Statistical anomaly detection and multivariate behavioral monitoring across the current healthcare record population.</p>
+      <div className="ml-exec-header">
+        <div>
+          <div className="ml-section-sub">Behavioral &amp; Statistical Surveillance</div>
+          <h1 className="ml-page-title">Anomaly Detection</h1>
+          <p className="ml-page-description">
+            Statistical anomaly detection and multivariate behavioral monitoring across the current healthcare record population.
+          </p>
+        </div>
+        <div className="ml-exec-actions">
+          <button
+            className="ml-btn-report"
+            onClick={handleDownloadReport}
+            disabled={exporting}
+            id="btn-download-anomaly-report"
+          >
+            {exporting ? (
+              <><span className="spinner-small" /> Generating PDF...</>
+            ) : exportSuccess ? (
+              <>✓ Downloaded</>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download Anomaly Report
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────── */}

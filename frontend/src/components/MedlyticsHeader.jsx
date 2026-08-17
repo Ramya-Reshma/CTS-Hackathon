@@ -1,6 +1,7 @@
-﻿import React from 'react'
+import React from 'react'
 import { useStore } from '../hooks/useStore'
 import { NAV_PAGES } from '../pages/MedlyticsApp'
+import MedlyticsLogo from './MedlyticsLogo'
 import './MedlyticsHeader.css'
 
 const MenuIcon = () => (
@@ -24,14 +25,17 @@ export default function MedlyticsHeader({ activePage, onMenuClick }) {
       <div className="topbar-right">
         {currentRun && (
           <>
-            <span className="topbar-run-label">Run</span>
+            <span className="topbar-run-label">RUN</span>
             <span className="topbar-run-id">{currentRun.run_id}</span>
             <span className="topbar-sep">·</span>
             <span className="topbar-filename" title={currentRun.filename}>{currentRun.filename}</span>
           </>
         )}
-        <span className="topbar-brand">MEDLYTICS</span>
+        <div style={{ marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid var(--border-light)' }}>
+          <MedlyticsLogo size={20} textColor="var(--navy-900)" showText={true} />
+        </div>
       </div>
     </header>
   )
 }
+
