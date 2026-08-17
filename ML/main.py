@@ -14,6 +14,7 @@ import isolation_forest as isf
 import correlation_analysis as ca
 import statistical_detection as sd
 import data_quality as dq
+import sla_temporal_monitoring as sla_mon
 
 
 def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
@@ -78,12 +79,16 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
         print("Data quality step failed:")
         traceback.print_exc()
 
-    # 6. SLA / classification (run sla_monitoring after data-quality outputs are written)
+    # 6. SLA / Temporal Monitoring (run after Data Quality)
     try:
-        import importlib
-        sla = importlib.import_module("sla_monitoring")
+        sla_mon.run_sla_monitoring(
+            df,
+            config_overrides={"output_dir": str(output_path)},
+        )
     except Exception as e:
-        print(f"SLA classification step skipped: {e}")
+        import traceback
+        print("SLA / Temporal Monitoring step failed:")
+        traceback.print_exc()
     
     # Extract the requested output JSON format for each record
     results = []
