@@ -4,20 +4,31 @@
   "severity": "MEDIUM",
   "summary": "",
   "anomaly_signals": {},
-  "evidence": [],
-  "observed_facts": [],
+  "evidence": [
+    "The ML signal count is 1, indicating one machine learning-based signal triggered the alert.",
+    "The provider NPI is 1000000020.0.",
+    "Beneficiary ID is -9000000001020."
+  ],
+  "observed_facts": [
+    "The record is a pharmacy claim with ID TEST100022.",
+    "It was flagged as an anomaly by the isolation forest model (is_anomaly=true).",
+    "The raw score is -0.01639477466366246 with a severity of 0.9848889501563065.",
+    "No statistical anomalies were detected (zscore=false, iqr=false).",
+    "Correlation signals show no strong anomaly patterns (anomaly=false, residual=-1304.779)."
+  ],
   "possible_causes": [],
   "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
   "confidence": 0.5,
   "impact": "",
   "recommended_actions": [
-    "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers."
+    "Normalize for provider specialty, geography, panel size, and case mix.",
+    "Validate provider master data including credentials, contract details, and location information.",
+    "Review persistent outliers for this provider across multiple timeframes and claim types."
   ],
   "additional_checks_required": [
-    "Verify provider NPI details and associated credentials.",
-    "Review the provider's historical claim patterns for trends or outliers.",
-    "Check if the beneficiary demographics or prescribing patterns have changed recently.",
-    "Confirm that the pharmacy provider is properly contracted and authorized."
+    "Verify if the provider's NPI has recent changes or inconsistencies in the system.",
+    "Cross-check claim details against historical claims from this provider to identify trends.",
+    "Ensure that the beneficiary is correctly linked to the provider and not flagged for other issues."
   ],
   "record_id": "TEST100022"
 }

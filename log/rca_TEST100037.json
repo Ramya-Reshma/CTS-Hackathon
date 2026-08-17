@@ -4,35 +4,21 @@
   "severity": "MEDIUM",
   "summary": "",
   "anomaly_signals": {},
-  "evidence": [
-    "Isolation forest identifies this as an anomaly with high severity.",
-    "Correlation analysis shows a significant residual, indicating deviation from expected patterns.",
-    "No statistical z-score or IQR anomalies were detected.",
-    "ML signal count is 2, suggesting multiple signals support the anomaly detection."
-  ],
-  "observed_facts": [
-    "The record is a pharmacy claim with ID TEST100037.",
-    "It was flagged as an anomaly by the isolation forest model (raw score: -0.013015687656556474, severity: 0.9618).",
-    "The anomaly is correlated with a residual value of 48330.00432201132.",
-    "There is no quantity/supply anomaly detected."
-  ],
-  "possible_causes": [
-    "This anomaly may be due to provider-specific factors such as behavior, patient mix, coding practices, or location.",
-    "The anomaly could stem from inconsistencies in provider master data or unaccounted variations in specialty or geography."
-  ],
-  "likely_root_cause": "Provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue, consistent with historical patterns of provider-related anomalies in pharmacy and medical claims.",
+  "evidence": [],
+  "observed_facts": [],
+  "possible_causes": [],
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
   "confidence": 0.5,
   "impact": "",
   "recommended_actions": [
-    "Normalize for specialty, geography, panel size, and case mix.",
-    "Validate provider master data including NPI details, credentials, and location.",
-    "Review persistent outliers for this provider (NPI: 1000000036.0) across similar claim types.",
-    "Investigate if there are any recent changes in provider practices or contract terms that might explain the deviation."
+    "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers.",
+    "investigate provider NPI 1000000036's historical claim patterns and geographic consistency.",
+    "review if the pharmacy provider is correctly credentialed and contracted for the services reported."
   ],
   "additional_checks_required": [
-    "Cross-reference the provider's historical claims data for trends in billing behavior.",
-    "Verify whether the provider is correctly categorized in terms of specialty and geographic area.",
-    "Check for any known issues or alerts related to this NPI in the system."
+    "Verify that the provider's location and specialty align with expected service delivery norms.",
+    "Check for any recent changes in provider credentials or contract status.",
+    "Cross-reference with peer providers in the same geographic area and specialty for benchmarking."
   ],
   "record_id": "TEST100037"
 }
