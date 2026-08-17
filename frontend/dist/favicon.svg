@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 95" fill="none">
+  <defs>
+    <linearGradient id="barGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#7dd3fc" />
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+  </defs>
+
+  <!-- 4 Ascending Analytics Bars -->
+  <rect x="34" y="58" width="6.5" height="15" rx="2.5" fill="url(#barGrad)" />
+  <rect x="43" y="50" width="6.5" height="23" rx="2.5" fill="url(#barGrad)" />
+  <rect x="52" y="42" width="6.5" height="31" rx="2.5" fill="url(#barGrad)" />
+  <rect x="61" y="34" width="6.5" height="39" rx="2.5" fill="url(#barGrad)" />
+
+  <!-- Upward Trend Line & Arrow -->
+  <path d="M32 50 L46 37 L56 43 L76 22" stroke="#0284c7" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M67 20 L77 21 L78 31 Z" fill="#0284c7" stroke="#0284c7" stroke-width="2" stroke-linejoin="round" />
+
+  <!-- Magnifying Glass Rim -->
+  <circle cx="48" cy="42" r="28" stroke="#0e4f6d" stroke-width="7" fill="none" />
+
+  <!-- Magnifying Glass Handle -->
+  <rect x="18" y="68" width="9" height="22" rx="4.5" transform="rotate(42 18 68)" fill="#0e4f6d" />
+</svg>

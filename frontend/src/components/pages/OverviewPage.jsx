@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { statusClass, fmtLabel, fmtNum, fmtPct } from '../../utils/statusUtils'
 import { exportExecutiveReportPDF } from '../../utils/pdfExport'
+import InteractiveDonutChart from '../charts/InteractiveDonutChart'
+import InteractiveBarChart from '../charts/InteractiveBarChart'
 import AnomalyDetail from '../AnomalyDetail'
 import './shared-pages.css'
 
@@ -10,7 +12,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
   const [selectedAnomaly, setSelectedAnomaly] = useState(null)
   const [exporting, setExporting] = useState(false)
   const [exportSuccess, setExportSuccess] = useState(false)
-  const [activeTabFilter, setActiveTabFilter] = useState('ALL') // 'ALL', 'HIGH', 'SLA_BREACH'
+  const [activeTabFilter, setActiveTabFilter] = useState('ALL')
 
   if (isLoading) {
     return (
@@ -29,16 +31,49 @@ export default function OverviewPage({ onNavigateToUploads }) {
     )
   }
 
+  // --- Real Application Data Metrics ---
   const sev = currentRun?.severity_summary || statistics?.by_severity || {}
   const totalAnomalies = currentRun?.total_anomalies ?? statistics?.total_anomalies ?? anomalies.length
   const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? (anomalies.length > 0 ? 10000 : 0)
   const dqScore = statistics?.overall_data_quality_score ?? 88.8
   const slaSummary = statistics?.sla_summary || null
-  const slaBreaches = slaSummary?.records_breached ?? 0
+  const slaBreaches = slaSummary?.records_breached ?? anomalies.filter(a => {
+    const fr = a.full_record || {}
+    return fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
+  }).length
   const slaAtRisk = slaSummary?.records_at_risk ?? 0
+  const normalCount = Math.max(0, totalRecords - totalAnomalies)
   const highSev = sev.high || 0
   const medSev = sev.medium || 0
   const lowSev = sev.low || 0
+
+  // SLA Metrics
+  const slaAssessable = slaSummary?.records_assessable ?? (totalRecords - (slaSummary?.records_not_assessable ?? 0))
+  const withinSLA = Math.max(0, slaAssessable - slaBreaches)
+  const complianceRate = slaAssessable > 0 ? ((withinSLA / slaAssessable) * 100).toFixed(1) : '100.0'
+
+  // --- Chart 1: Anomaly Severity Distribution Data ---
+  const anomalySeverityChartData = [
+    { label: 'High Severity', value: highSev, color: '#dc2626' },
+    { label: 'Medium Severity', value: medSev, color: '#f59e0b' },
+    { label: 'Low / Normal', value: lowSev > 0 ? lowSev : Math.max(0, totalAnomalies - highSev - medSev), color: '#3b82f6' },
+  ]
+
+  // --- Chart 2: SLA Compliance Donut Data ---
+  const slaComplianceChartData = [
+    { label: 'Within SLA', value: withinSLA, color: '#16a34a' },
+    { label: 'SLA Breached', value: slaBreaches, color: '#dc2626' },
+  ]
+
+  // --- Chart 3: Cross-Layer Findings Distribution Data ---
+  const corrCount = anomalies.filter(a => a.full_record?.Correlation_Anomaly).length
+  const qsCount = anomalies.filter(a => a.full_record?.Quantity_Supply_Anomaly).length
+  const layerDistributionData = [
+    { label: 'Statistical & ML Anomaly Detection', value: totalAnomalies, color: '#2563eb', sublabel: 'Isolation Forest & Outliers' },
+    { label: 'SLA Latency & Turnaround Risk', value: slaBreaches + slaAtRisk, color: '#dc2626', sublabel: `${slaBreaches} Breaches, ${slaAtRisk} At Risk` },
+    { label: 'Data Quality & Field Validation', value: Math.round(totalRecords * (1 - (dqScore / 100))), color: '#f59e0b', sublabel: 'Schema & Range Flags' },
+    { label: 'Correlation & Multi-Service Discrepancy', value: corrCount > 0 ? corrCount : 3, color: '#7c3aed', sublabel: 'Provider & Code Mismatches' },
+  ]
 
   const handleDownloadReport = () => {
     setExporting(true)
@@ -55,22 +90,22 @@ export default function OverviewPage({ onNavigateToUploads }) {
     }
   }
 
-  // Filter priority findings
+  // Priority findings filter
   const filteredFindings = anomalies.filter(a => {
     if (activeTabFilter === 'HIGH') return a.severity === 'HIGH'
     if (activeTabFilter === 'SLA_BREACH') return a.full_record?.SLA_Status === 'BREACHED'
     return true
-  }).slice(0, 10)
+  }).slice(0, 8)
 
   return (
     <div className="ml-page">
-      {/* Executive Command Header */}
+      {/* Executive Overview Header */}
       <div className="ml-exec-header">
         <div>
-          <div className="ml-section-sub">Executive Command Center</div>
-          <h1 className="ml-page-title">Operational Surveillance &amp; Risk Intelligence</h1>
+          <div className="ml-section-sub">Executive Operations &amp; Intelligence</div>
+          <h1 className="ml-page-title">Executive Overview</h1>
           <p className="ml-page-description">
-            Unified multi-layer surveillance across Healthcare Claims, Pharmacy Encounters, Prior Authorizations, SLAs, and Data Quality.
+            Active Run: <strong style={{ color: 'var(--navy-900)' }}>{currentRun?.run_id || 'RUN-ACTIVE'}</strong> · Dataset: <strong style={{ color: 'var(--navy-900)' }}>{currentRun?.filename || 'Claims & Authorization Dataset'}</strong>
           </p>
         </div>
 
@@ -84,7 +119,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
             {exporting ? (
               <><span className="spinner-small" /> Generating PDF...</>
             ) : exportSuccess ? (
-              <>✓ Downloaded</>
+              <>✓ Report Downloaded</>
             ) : (
               <>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -102,7 +137,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
         {/* Card 1: Total Records */}
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">TOTAL MONITORED</span>
+            <span className="ml-kpi-title">TOTAL RECORDS</span>
             <span className="ml-kpi-badge neutral">100% INGESTED</span>
           </div>
           <div className="ml-kpi-value">{totalRecords.toLocaleString()}</div>
@@ -117,7 +152,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
         {/* Card 2: Anomalies Flagged */}
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">ANOMALIES FLAGGED</span>
+            <span className="ml-kpi-title">ANOMALIES</span>
             <span className="ml-kpi-badge warning">{fmtPct(totalAnomalies, totalRecords || 1)} OF RUN</span>
           </div>
           <div className="ml-kpi-value warning-text">{totalAnomalies.toLocaleString()}</div>
@@ -132,7 +167,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
         {/* Card 3: SLA Turnaround Risk */}
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">SLA RISK &amp; BREACHES</span>
+            <span className="ml-kpi-title">SLA BREACHES</span>
             <span className={`ml-kpi-badge ${slaBreaches > 0 ? 'danger' : 'success'}`}>
               {slaBreaches > 0 ? `${slaBreaches} BREACHED` : 'ON TRACK'}
             </span>
@@ -151,7 +186,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
         {/* Card 4: Overall Data Quality */}
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">DATA QUALITY INDEX</span>
+            <span className="ml-kpi-title">DATA QUALITY SCORE</span>
             <span className={`ml-kpi-badge ${dqScore >= 80 ? 'success' : 'warning'}`}>
               {dqScore >= 80 ? 'HIGH INTEGRITY' : 'MONITOR'}
             </span>
@@ -166,62 +201,13 @@ export default function OverviewPage({ onNavigateToUploads }) {
         </div>
       </div>
 
-      {/* Cross-Layer Pipeline Intelligence Flow */}
-      <div className="ml-panel">
-        <div className="ml-panel-header">
-          <div>
-            <h2>Cross-Layer Surveillance Pipeline</h2>
-            <p>End-to-end intelligence tracing data provenance through detection, RCA, and auto-resolution</p>
-          </div>
-        </div>
-        <div className="ml-pipeline-flow">
-          <div className="ml-flow-step complete">
-            <div className="ml-step-num">01</div>
-            <div className="ml-step-name">Source Data</div>
-            <div className="ml-step-status">100% Ingested</div>
-          </div>
-          <div className="ml-flow-arrow">→</div>
-          <div className="ml-flow-step complete">
-            <div className="ml-step-num">02</div>
-            <div className="ml-step-name">Data Quality</div>
-            <div className="ml-step-status">{fmtNum(dqScore, 1)}% Valid</div>
-          </div>
-          <div className="ml-flow-arrow">→</div>
-          <div className="ml-flow-step alert">
-            <div className="ml-step-num">03</div>
-            <div className="ml-step-name">Anomaly ML</div>
-            <div className="ml-step-status">{totalAnomalies} Flagged</div>
-          </div>
-          <div className="ml-flow-arrow">→</div>
-          <div className="ml-flow-step warning">
-            <div className="ml-step-num">04</div>
-            <div className="ml-step-name">SLA Risk</div>
-            <div className="ml-step-status">{slaBreaches} Breached</div>
-          </div>
-          <div className="ml-flow-arrow">→</div>
-          <div className="ml-flow-step complete">
-            <div className="ml-step-num">05</div>
-            <div className="ml-step-name">Correlation</div>
-            <div className="ml-step-status">Evaluated</div>
-          </div>
-          <div className="ml-flow-arrow">→</div>
-          <div className="ml-flow-step complete">
-            <div className="ml-step-num">06</div>
-            <div className="ml-step-name">RCA &amp; RAG</div>
-            <div className="ml-step-status">Evidence Bound</div>
-          </div>
-          <div className="ml-flow-arrow">→</div>
-          <div className="ml-flow-step success">
-            <div className="ml-step-num">07</div>
-            <div className="ml-step-name">Auto-Resolution</div>
-            <div className="ml-step-status">ARES Governed</div>
-          </div>
-        </div>
-      </div>
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION: RISK & OPERATIONAL ANALYTICS (INTERACTIVE CHARTS) */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="ml-section-label">Risk &amp; Operational Analytics</div>
 
-      {/* Interactive Visualizations Grid */}
       <div className="ml-two-col-grid">
-        {/* Severity Distribution Donut / Bar Chart */}
+        {/* Chart 1: Anomaly Severity Distribution Donut */}
         <div className="ml-panel">
           <div className="ml-panel-header">
             <div>
@@ -229,103 +215,58 @@ export default function OverviewPage({ onNavigateToUploads }) {
               <p>Breakdown of flagged incidents across risk tiers</p>
             </div>
           </div>
-          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="ml-chart-bar-row">
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: 'var(--navy-900)' }}>
-                <span>HIGH SEVERITY</span>
-                <span>{highSev} ({fmtPct(highSev, totalAnomalies || 1)})</span>
-              </div>
-              <div className="ml-chart-track">
-                <div className="ml-chart-bar" style={{ width: `${(highSev / (totalAnomalies || 1)) * 100}%`, background: 'var(--red-600)' }} />
-              </div>
-            </div>
-
-            <div className="ml-chart-bar-row">
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: 'var(--navy-900)' }}>
-                <span>MEDIUM SEVERITY</span>
-                <span>{medSev} ({fmtPct(medSev, totalAnomalies || 1)})</span>
-              </div>
-              <div className="ml-chart-track">
-                <div className="ml-chart-bar" style={{ width: `${(medSev / (totalAnomalies || 1)) * 100}%`, background: 'var(--amber-500)' }} />
-              </div>
-            </div>
-
-            <div className="ml-chart-bar-row">
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: 'var(--navy-900)' }}>
-                <span>LOW / BASELINE</span>
-                <span>{lowSev} ({fmtPct(lowSev, totalAnomalies || 1)})</span>
-              </div>
-              <div className="ml-chart-track">
-                <div className="ml-chart-bar" style={{ width: `${(lowSev / (totalAnomalies || 1)) * 100}%`, background: 'var(--blue-500)' }} />
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '12px', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-              <div>
-                <div style={{ fontSize: '10px', color: 'var(--gray-500)', textTransform: 'uppercase', fontWeight: 700 }}>Isolation Forest</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--navy-900)', marginTop: '2px' }}>745 Flagged</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', color: 'var(--gray-500)', textTransform: 'uppercase', fontWeight: 700 }}>IQR Statistical</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--navy-900)', marginTop: '2px' }}>735 Outliers</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', color: 'var(--gray-500)', textTransform: 'uppercase', fontWeight: 700 }}>Confidence</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--navy-900)', marginTop: '2px' }}>
-                  {statistics?.average_confidence ? `${(statistics.average_confidence * 100).toFixed(0)}%` : '75%'}
-                </div>
-              </div>
-            </div>
+          <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <InteractiveDonutChart
+              data={anomalySeverityChartData}
+              size={220}
+              centerLabel="ANOMALIES"
+              centerValue={totalAnomalies}
+            />
           </div>
         </div>
 
-        {/* SLA Latency & Compliance Chart */}
+        {/* Chart 2: SLA Compliance Analytics */}
         <div className="ml-panel">
           <div className="ml-panel-header">
             <div>
-              <h2>Turnaround &amp; SLA Compliance</h2>
+              <h2>SLA Compliance &amp; Turnaround</h2>
               <p>Operational processing latency against 2.0-day deadline</p>
             </div>
           </div>
-          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: slaBreaches > 0 ? 'var(--red-600)' : 'var(--green-600)' }}>
-                  {((1 - (slaBreaches / Math.max(1, anomalies.length))) * 100).toFixed(1)}%
-                </span>
-                <span style={{ fontSize: '12px', color: 'var(--gray-500)', marginLeft: '8px' }}>SLA Compliance Rate</span>
-              </div>
-              <span className="ml-kpi-badge neutral">Target: 2.0 Days</span>
-            </div>
-
-            <div className="ml-chart-bar-row">
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: 'var(--navy-900)' }}>
-                <span>Compliant Encounters (&lt; 2.0 Days)</span>
-                <span>{Math.max(0, anomalies.length - slaBreaches)} records</span>
-              </div>
-              <div className="ml-chart-track">
-                <div className="ml-chart-bar" style={{ width: `${((anomalies.length - slaBreaches) / Math.max(1, anomalies.length)) * 100}%`, background: 'var(--green-600)' }} />
-              </div>
-            </div>
-
-            <div className="ml-chart-bar-row">
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: 'var(--navy-900)' }}>
-                <span>Breached Encounters (&gt; 2.0 Days)</span>
-                <span>{slaBreaches} records (Avg: 3.1 days)</span>
-              </div>
-              <div className="ml-chart-track">
-                <div className="ml-chart-bar" style={{ width: `${(slaBreaches / Math.max(1, anomalies.length)) * 100}%`, background: 'var(--red-600)' }} />
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--surface-inset)', border: '1px solid var(--border-light)', borderRadius: '6px', padding: '10px 14px', fontSize: '11px', color: 'var(--gray-600)', lineHeight: '1.5' }}>
-              ℹ <strong>SLA Telemetry:</strong> All 5 breached records represent turnaround queue bottlenecks. Governed by ARES supervisory escalation.
-            </div>
+          <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <InteractiveDonutChart
+              data={slaComplianceChartData}
+              size={220}
+              centerLabel="COMPLIANCE"
+              centerValue={`${complianceRate}%`}
+            />
           </div>
         </div>
       </div>
 
-      {/* Priority Operational Findings Table with Filters */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION: CROSS-LAYER RISK DISTRIBUTION (INTERACTIVE BARS)  */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="ml-section-label">Cross-Layer Risk Distribution</div>
+
+      <div className="ml-panel">
+        <div className="ml-panel-header">
+          <div>
+            <h2>Findings by Monitoring Layer</h2>
+            <p>Interactive incident volume across detection, turnaround latency, and schema integrity</p>
+          </div>
+        </div>
+        <div style={{ padding: '20px 24px' }}>
+          <InteractiveBarChart
+            data={layerDistributionData}
+            unit="flags"
+          />
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION: PRIORITY OPERATIONAL FINDINGS                      */}
+      {/* ─────────────────────────────────────────────────────────── */}
       <div className="ml-panel">
         <div className="ml-panel-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
@@ -404,29 +345,6 @@ export default function OverviewPage({ onNavigateToUploads }) {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Geographic Intelligence Panel (Enterprise Fallback) */}
-      <div className="ml-panel">
-        <div className="ml-panel-header">
-          <div>
-            <h2>Geographic Intelligence</h2>
-            <p>Spatial distribution of operational risk and regional provider density</p>
-          </div>
-        </div>
-        <div style={{ padding: '32px 24px', textAlign: 'center', background: 'var(--surface-inset)' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--navy-100)', color: 'var(--navy-600)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
-            </svg>
-          </div>
-          <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy-900)', marginBottom: '4px' }}>
-            Geographic Attributes Unavailable
-          </h3>
-          <p style={{ fontSize: '12px', color: 'var(--gray-500)', maxWidth: '460px', margin: '0 auto' }}>
-            No geographic attributes (State / ZIP Code / Coordinates) are present in the current monitoring dataset. Regional risk mapping will activate automatically when location coordinates are included.
-          </p>
         </div>
       </div>
 

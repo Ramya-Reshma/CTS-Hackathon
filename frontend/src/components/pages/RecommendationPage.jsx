@@ -203,13 +203,37 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
 
   return (
     <div className="ares-panel">
+      {/* Conceptual Architectural Position Indicator */}
+      <div style={{ background: '#f8fafc', padding: '8px 16px', borderBottom: '1px solid #e2e8f0', fontSize: '10.5px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        <span style={{ fontWeight: 600 }}>Operational Flow:</span>
+        <span>Data</span>
+        <span>→</span>
+        <span>Data Quality</span>
+        <span>→</span>
+        <span>Anomaly Detection</span>
+        <span>→</span>
+        <span>SLA Risk</span>
+        <span>→</span>
+        <span>Correlation</span>
+        <span>→</span>
+        <span>Evidence Builder</span>
+        <span>→</span>
+        <span>RAG Retrieval</span>
+        <span>→</span>
+        <span>RCA</span>
+        <span>→</span>
+        <span>Recommendation</span>
+        <span>→</span>
+        <span style={{ fontWeight: 800, color: '#1e3a8a', background: '#dbeafe', padding: '2px 6px', borderRadius: '4px' }}>AutoFix Agent (Final Stage)</span>
+      </div>
+
       {/* Panel Header */}
       <div className="ares-panel-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="ares-icon">⚙</div>
+          <div className="ares-icon" style={{ background: '#1e3a8a', color: '#ffffff' }}>⚡</div>
           <div>
-            <h2>Automatic Resolution</h2>
-            <p>Cross-layer auto-fix eligibility evaluation across all 14 monitoring layers</p>
+            <h2 style={{ letterSpacing: '0.5px' }}>AUTO FIX AGENT</h2>
+            <p>Cross-layer remediation eligibility evaluation</p>
           </div>
         </div>
         {evaluation && (
@@ -496,7 +520,7 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
 
 /* ─── Main Page ─── */
 export default function RecommendationPage() {
-  const { anomalies, statistics, isLoading, error } = useMedlyticsData()
+  const { anomalies, statistics, isLoading, error, currentRun } = useMedlyticsData()
   const [selectedId, setSelectedId] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { fmtNum, fmtPct } from '../../utils/statusUtils'
 import { exportDataQualityReportPDF } from '../../utils/pdfExport'
+import InteractiveBarChart from '../charts/InteractiveBarChart'
 import './shared-pages.css'
 
 export default function DataQualityPage() {
@@ -48,6 +49,13 @@ export default function DataQualityPage() {
   const validity = 75.5
   const consistency = 80.9
   const timeliness = 100.0
+
+  const dimensionChartData = [
+    { label: 'Completeness', value: completeness, color: '#16a34a', sublabel: 'Non-null required attributes' },
+    { label: 'Timeliness', value: timeliness, color: '#2563eb', sublabel: 'Valid chronological date sequence' },
+    { label: 'Consistency', value: consistency, color: '#7c3aed', sublabel: 'Cross-table referential integrity' },
+    { label: 'Validity', value: validity, color: '#f59e0b', sublabel: 'Code schema & allowed ranges' },
+  ]
 
   // Extract actual backend processing integrity data
   const integrity = statistics?.processing_integrity || null
@@ -231,41 +239,15 @@ export default function DataQualityPage() {
           <div className="ml-info-card-header">
             <div className="ml-info-card-title">
               <h2>Quality Dimension Performance</h2>
-              <p>Validation across core health data dimensions</p>
+              <p>Interactive validation scores across core health data dimensions</p>
             </div>
           </div>
-          <div className="ml-info-card-body">
-            <div className="ml-dim-row">
-              <span className="ml-dim-label">Completeness</span>
-              <div className="ml-dim-bar-bg">
-                <div className="ml-dim-bar-fill" style={{ width: `${completeness}%`, background: 'var(--green-600)' }} />
-              </div>
-              <span className="ml-dim-val">{fmtPct(completeness)}</span>
-            </div>
-
-            <div className="ml-dim-row">
-              <span className="ml-dim-label">Consistency</span>
-              <div className="ml-dim-bar-bg">
-                <div className="ml-dim-bar-fill" style={{ width: `${consistency}%`, background: 'var(--navy-500)' }} />
-              </div>
-              <span className="ml-dim-val">{fmtPct(consistency)}</span>
-            </div>
-
-            <div className="ml-dim-row">
-              <span className="ml-dim-label">Validity</span>
-              <div className="ml-dim-bar-bg">
-                <div className="ml-dim-bar-fill" style={{ width: `${validity}%`, background: 'var(--amber-600)' }} />
-              </div>
-              <span className="ml-dim-val">{fmtPct(validity)}</span>
-            </div>
-
-            <div className="ml-dim-row">
-              <span className="ml-dim-label">Timeliness</span>
-              <div className="ml-dim-bar-bg">
-                <div className="ml-dim-bar-fill" style={{ width: `${timeliness}%`, background: 'var(--green-600)' }} />
-              </div>
-              <span className="ml-dim-val">{fmtPct(timeliness)}</span>
-            </div>
+          <div className="ml-info-card-body" style={{ padding: '16px 20px' }}>
+            <InteractiveBarChart
+              data={dimensionChartData}
+              unit="%"
+              maxVal={100}
+            />
           </div>
         </div>
 
