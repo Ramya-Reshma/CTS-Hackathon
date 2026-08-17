@@ -1,13 +1,21 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { getAnomalyDetail } from '../services/api'
 import './AnomalyDetail.css'
+
+// Severity badge helpers (presentation only — no logic change)
+const getSevClass = (s) => {
+  const m = { HIGH: 'severity-high', MEDIUM: 'severity-medium', LOW: 'severity-low' }
+  return m[s] || 'severity-badge'
+}
 
 export default function AnomalyDetail({ anomaly, onClose }) {
   const [detail, setDetail] = useState(anomaly)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [techOpen, setTechOpen] = useState(false)
+  const [signalsOpen, setSignalsOpen] = useState(false)
 
-  // Load full detail if needed
+  // Load full detail if needed — unchanged logic
   useEffect(() => {
     if (!anomaly.full_record) {
       setIsLoading(true)
@@ -18,46 +26,144 @@ export default function AnomalyDetail({ anomaly, onClose }) {
     }
   }, [anomaly.id])
 
-  const getSeverityColor = (severity) => {
-    const colors = {
-      HIGH: '#d32f2f',
-      MEDIUM: '#f57c00',
-      LOW: '#388e3c',
-    }
-    return colors[severity] || '#999'
-  }
-
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Anomaly Details">
       <div className="detail-modal" onClick={(e) => e.stopPropagation()}>
+
+        {/* ── Header ───────────────────────────────────────── */}
         <div className="detail-header">
           <div className="detail-title">
-            <h2>Anomaly Details</h2>
-            <span className="detail-id">{detail.record_id}</span>
+            <span className="detail-header-label">Record Investigation</span>
+            <span className="detail-record-id">{detail.record_id}</span>
+            <div className="detail-severity-row">
+              <span className={`severity-badge ${getSevClass(detail.severity)}`}>{detail.severity}</span>
+            </div>
           </div>
-          <button className="close-button" onClick={onClose} title="Close">
-            ✕
-          </button>
+          <button className="close-button" onClick={onClose} aria-label="Close panel">✕</button>
         </div>
 
+        {/* ── Meta strip ───────────────────────────────────── */}
+        <div className="detail-meta">
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Record Type</span>
+            <span className="detail-meta-value">{detail.record_type || '—'}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Priority</span>
+            <span className="detail-meta-value">{detail.priority || '—'}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Anomaly Type</span>
+            <span className="detail-meta-value">{detail.anomaly_type || '—'}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Confidence</span>
+            <span className="detail-meta-value">
+              {detail.confidence ? `${(detail.confidence * 100).toFixed(0)}%` : '—'}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Loading / Error ───────────────────────────────── */}
         {isLoading && (
           <div className="detail-loading">
-            <div className="spinner"></div>
-            <p>Loading details...</p>
+            <div className="spinner" />
+            <span>Loading details...</span>
           </div>
         )}
 
         {error && (
           <div className="detail-error">
-            <p>⚠️ {error}</p>
+            <p>⚠ {error}</p>
           </div>
         )}
 
         {!isLoading && !error && (
           <div className="detail-content">
-            {/* Key Information */}
-            <section className="detail-section">
-              <h3>Key Information</h3>
+
+            {/* Primary Signal */}
+            {detail.primary_signal && (
+              <div className="detail-section">
+                <h3>Why Was This Flagged?</h3>
+                <div className="signal-box">
+                  <p>{detail.primary_signal}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Root Cause */}
+            {detail.likely_root_cause && (
+              <div className="detail-section">
+                <h3>Likely Root Cause</h3>
+                <div className="root-cause-box">
+                  <p>{detail.likely_root_cause}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Recommended Action */}
+            {detail.recommended_action && (
+              <div className="detail-section">
+                <h3>Recommended Action</h3>
+                <div className="action-box">
+                  <p>{detail.recommended_action}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Business Impact */}
+            {detail.impact && (
+              <div className="detail-section">
+                <h3>Business Impact</h3>
+                <div className="impact-box">
+                  <p>{detail.impact}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Additional Checks */}
+            {detail.additional_checks && (
+              <div className="detail-section">
+                <h3>Additional Checks Required</h3>
+                <div className="checks-box">
+                  <p>{detail.additional_checks}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Evidence */}
+            {Array.isArray(detail.evidence) && detail.evidence.length > 0 && (
+              <div className="detail-section">
+                <h3>Evidence</h3>
+                <div className="checks-box">
+                  <ul>{detail.evidence.map((item, i) => <li key={`ev-${i}`}>{item}</li>)}</ul>
+                </div>
+              </div>
+            )}
+
+            {/* Observed Facts */}
+            {Array.isArray(detail.observed_facts) && detail.observed_facts.length > 0 && (
+              <div className="detail-section">
+                <h3>Observed Facts</h3>
+                <div className="checks-box">
+                  <ul>{detail.observed_facts.map((item, i) => <li key={`of-${i}`}>{item}</li>)}</ul>
+                </div>
+              </div>
+            )}
+
+            {/* Possible Causes */}
+            {Array.isArray(detail.possible_causes) && detail.possible_causes.length > 0 && (
+              <div className="detail-section">
+                <h3>Possible Causes</h3>
+                <div className="checks-box">
+                  <ul>{detail.possible_causes.map((item, i) => <li key={`pc-${i}`}>{item}</li>)}</ul>
+                </div>
+              </div>
+            )}
+
+            {/* Key Information grid */}
+            <div className="detail-section">
+              <h3>Record Information</h3>
               <div className="info-grid">
                 <div className="info-item">
                   <span className="info-label">Record ID</span>
@@ -65,20 +171,17 @@ export default function AnomalyDetail({ anomaly, onClose }) {
                 </div>
                 <div className="info-item">
                   <span className="info-label">Record Type</span>
-                  <span className="info-value">{detail.record_type}</span>
+                  <span className="info-value">{detail.record_type || '—'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Severity</span>
-                  <span
-                    className="info-value"
-                    style={{ color: getSeverityColor(detail.severity) }}
-                  >
-                    <strong>{detail.severity}</strong>
+                  <span className="info-value">
+                    <span className={`severity-badge ${getSevClass(detail.severity)}`}>{detail.severity}</span>
                   </span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Priority</span>
-                  <span className="info-value">{detail.priority}</span>
+                  <span className="info-value">{detail.priority || '—'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Anomaly Type</span>
@@ -87,130 +190,48 @@ export default function AnomalyDetail({ anomaly, onClose }) {
                 <div className="info-item">
                   <span className="info-label">Confidence</span>
                   <span className="info-value">
-                    {detail.confidence ? (detail.confidence * 100).toFixed(0) : '—'}%
+                    {detail.confidence ? `${(detail.confidence * 100).toFixed(0)}%` : '—'}
                   </span>
                 </div>
               </div>
-            </section>
+            </div>
 
-            {/* Primary Signal */}
-            {detail.primary_signal && (
-              <section className="detail-section">
-                <h3>Why Was This Flagged?</h3>
-                <div className="signal-box">
-                  <p>{detail.primary_signal}</p>
-                </div>
-              </section>
-            )}
-
-            {/* Root Cause */}
-            {detail.likely_root_cause && (
-              <section className="detail-section">
-                <h3>Likely Root Cause</h3>
-                <div className="root-cause-box">
-                  <p>{detail.likely_root_cause}</p>
-                </div>
-              </section>
-            )}
-
-            {/* Recommended Action */}
-            {detail.recommended_action && (
-              <section className="detail-section">
-                <h3>Recommended Action</h3>
-                <div className="action-box">
-                  <p>{detail.recommended_action}</p>
-                </div>
-              </section>
-            )}
-
-            {/* Impact */}
-            {detail.impact && (
-              <section className="detail-section">
-                <h3>Business Impact</h3>
-                <div className="impact-box">
-                  <p>{detail.impact}</p>
-                </div>
-              </section>
-            )}
-
-            {/* Additional Checks */}
-            {detail.additional_checks && (
-              <section className="detail-section">
-                <h3>Additional Checks Required</h3>
-                <div className="checks-box">
-                  <p>{detail.additional_checks}</p>
-                </div>
-              </section>
-            )}
-
-            {/* Evidence */}
-            {Array.isArray(detail.evidence) && detail.evidence.length > 0 && (
-              <section className="detail-section">
-                <h3>Evidence</h3>
-                <div className="checks-box">
-                  <ul>
-                    {detail.evidence.map((item, index) => (
-                      <li key={`evidence-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            )}
-
-            {/* Observed Facts */}
-            {Array.isArray(detail.observed_facts) && detail.observed_facts.length > 0 && (
-              <section className="detail-section">
-                <h3>Observed Facts</h3>
-                <div className="checks-box">
-                  <ul>
-                    {detail.observed_facts.map((item, index) => (
-                      <li key={`fact-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            )}
-
-            {/* Possible Causes */}
-            {Array.isArray(detail.possible_causes) && detail.possible_causes.length > 0 && (
-              <section className="detail-section">
-                <h3>Possible Causes</h3>
-                <div className="checks-box">
-                  <ul>
-                    {detail.possible_causes.map((item, index) => (
-                      <li key={`cause-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            )}
-
-            {/* Anomaly Signals */}
+            {/* Anomaly Signals — collapsible */}
             {detail.anomaly_signals && (
-              <section className="detail-section">
-                <h3>Anomaly Signals</h3>
-                <div className="technical-details">
-                  <pre>{JSON.stringify(detail.anomaly_signals, null, 2)}</pre>
-                </div>
-              </section>
+              <div className="detail-section">
+                <button className="technical-toggle" onClick={() => setSignalsOpen(o => !o)} aria-expanded={signalsOpen}>
+                  <span>Anomaly Signals</span>
+                  <span className={`technical-toggle-arrow${signalsOpen ? ' open' : ''}`}>▾</span>
+                </button>
+                {signalsOpen && (
+                  <div className="technical-details">
+                    <pre>{JSON.stringify(detail.anomaly_signals, null, 2)}</pre>
+                  </div>
+                )}
+              </div>
             )}
 
-            {/* Technical Details */}
+            {/* Technical Details — collapsible */}
             {detail.full_record && (
-              <section className="detail-section">
-                <h3>Technical Details</h3>
-                <div className="technical-details">
-                  <pre>{JSON.stringify(detail.full_record, null, 2)}</pre>
-                </div>
-              </section>
+              <div className="detail-section">
+                <button className="technical-toggle" onClick={() => setTechOpen(o => !o)} aria-expanded={techOpen}>
+                  <span>Technical Details</span>
+                  <span className={`technical-toggle-arrow${techOpen ? ' open' : ''}`}>▾</span>
+                </button>
+                {techOpen && (
+                  <div className="technical-details">
+                    <pre>{JSON.stringify(detail.full_record, null, 2)}</pre>
+                  </div>
+                )}
+              </div>
             )}
+
           </div>
         )}
 
+        {/* ── Footer ───────────────────────────────────────── */}
         <div className="detail-footer">
-          <button className="close-footer-button" onClick={onClose}>
-            Close
-          </button>
+          <button className="close-footer-button" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>

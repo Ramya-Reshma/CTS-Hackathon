@@ -1,40 +1,48 @@
-import React from 'react'
+﻿import React from 'react'
 import './SummaryCards.css'
 
 export default function SummaryCards({ totalRecords, totalAnomalies, severitySummary, overallDataQualityScore }) {
   return (
     <div className="summary-cards">
-      <div className="card">
-        <div className="card-label">Total Records</div>
-        <div className="card-value">{totalRecords.toLocaleString()}</div>
+
+      <div className="kpi-card">
+        <span className="kpi-label">Total Records</span>
+        <span className="kpi-value">{(totalRecords || 0).toLocaleString()}</span>
+        <span className="kpi-sub">Analysis dataset</span>
       </div>
 
-      <div className="card">
-        <div className="card-label">Total Anomalies</div>
-        <div className="card-value">{totalAnomalies.toLocaleString()}</div>
+      <div className="kpi-card">
+        <span className="kpi-label">Total Anomalies</span>
+        <span className="kpi-value">{(totalAnomalies || 0).toLocaleString()}</span>
+        <span className="kpi-sub">Detected by ML pipeline</span>
       </div>
 
-      {overallDataQualityScore !== undefined && overallDataQualityScore !== null && (
-        <div className="card">
-          <div className="card-label">Overall Data Quality</div>
-          <div className="card-value">{Number(overallDataQualityScore).toFixed(1)} / 100</div>
+      {overallDataQualityScore != null && (
+        <div className="kpi-card kpi-dq">
+          <span className="kpi-label">Data Quality</span>
+          <span className="kpi-value">{Number(overallDataQualityScore).toFixed(1)}</span>
+          <span className="kpi-sub">Score out of 100</span>
         </div>
       )}
 
-      <div className="card card-high">
-        <div className="card-label">High Severity</div>
-        <div className="card-value">{(severitySummary.high || 0).toLocaleString()}</div>
+      <div className="kpi-card kpi-high">
+        <span className="kpi-label">High</span>
+        <span className="kpi-value">{((severitySummary || {}).high || 0).toLocaleString()}</span>
+        <span className="kpi-sub">Severity anomalies</span>
       </div>
 
-      <div className="card card-medium">
-        <div className="card-label">Medium Severity</div>
-        <div className="card-value">{(severitySummary.medium || 0).toLocaleString()}</div>
+      <div className="kpi-card kpi-medium">
+        <span className="kpi-label">Medium</span>
+        <span className="kpi-value">{((severitySummary || {}).medium || 0).toLocaleString()}</span>
+        <span className="kpi-sub">Severity anomalies</span>
       </div>
 
-      <div className="card card-low">
-        <div className="card-label">Low Severity</div>
-        <div className="card-value">{(severitySummary.low || 0).toLocaleString()}</div>
+      <div className="kpi-card kpi-low">
+        <span className="kpi-label">Low</span>
+        <span className="kpi-value">{((severitySummary || {}).low || 0).toLocaleString()}</span>
+        <span className="kpi-sub">Severity anomalies</span>
       </div>
+
     </div>
   )
 }
