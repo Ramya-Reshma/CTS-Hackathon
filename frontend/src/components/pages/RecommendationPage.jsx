@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import {
   getAnomalyDetail,
@@ -46,76 +46,11 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
   const [showEvidence, setShowEvidence] = useState(false)
   const [error, setError] = useState(null)
 
-  const full = selectedRecord?.full_record || {}
-  const anomalySignals = selectedRecord?.anomaly_signals || {}
+  /* Keep a stable ref to the selected record to avoid useCallback dependency churn */
+  const selectedRecordRef = useRef(selectedRecord)
+  selectedRecordRef.current = selectedRecord
 
-  /* Build issue payload from selected record */
-  const buildIssuePayload = useCallback(() => {
-    const evidenceList = []
-    // Source evidence from raw record fields
-    if (selectedRecord?.record_id) {
-      evidenceList.push({ source: 'SOURCE_RECORD', field: 'Record_ID', value: selectedRecord.record_id, authority: 'SOURCE' })
-    }
-    if (full.Billed_Amount !== undefined) {
-      evidenceList.push({ source: 'SOURCE_RECORD', field: 'Billed_Amount', value: full.Billed_Amount, authority: 'SOURCE' })
-    }
-    if (full.Allowed_Amount !== undefined) {
-      evidenceList.push({ source: 'SOURCE_RECORD', field: 'Allowed_Amount', value: full.Allowed_Amount, authority: 'SOURCE' })
-    }
-    // Backend engine evidence
-    if (full.SLA_Status !== undefined) {
-      evidenceList.push({ source: 'SLA_ENGINE', field: 'SLA_Status', value: full.SLA_Status, authority: 'BACKEND' })
-    }
-    if (anomalySignals.iso_score !== undefined) {
-      evidenceList.push({ source: 'ISOLATION_FOREST', field: 'ISO_Score', value: anomalySignals.iso_score, authority: 'BACKEND' })
-    }
-    if (selectedRecord?.evidence?.length > 0) {
-      selectedRecord.evidence.forEach(ev => {
-        evidenceList.push({ source: 'RAG_KB', field: 'Policy_Finding', value: ev, authority: 'RAG' })
-      })
-    }
-    if (selectedRecord?.likely_root_cause) {
-      evidenceList.push({ source: 'RCA_AGENT', field: 'Root_Cause', value: selectedRecord.likely_root_cause, authority: 'LLM' })
-    }
-
-    // Determine issue type from record characteristics
-    const isAnomalous = full.ML_Is_Anomalous === true || full.ISO_Is_Anomaly === true
-    const isSlaBreached = full.SLA_Status === 'BREACHED' || full.SLA_Breached === true
-    const missingDerivedFeature = full.Allowed_To_Billed_Ratio === undefined || full.Allowed_To_Billed_Ratio === null
-    const missingSlaSerialized = isSlaBreached && (full.SLA_Status === undefined || full.SLA_Status === null)
-
-    let issueType, issueDescription, contextData = {}
-
-    if (missingSlaSerialized) {
-      issueType = 'SERIALIZATION_MISSING_SLA_OUTPUT'
-      issueDescription = `SLA engine produced BREACHED result for ${selectedRecord.record_id} but the final output has missing/null SLA status.`
-      contextData = { authoritative_result_available: true, layer: 'SLA' }
-    } else if (missingDerivedFeature && evidenceList.some(e => e.authority === 'SOURCE')) {
-      issueType = 'DATA_QUALITY_MISSING_DERIVABLE_FEATURE'
-      issueDescription = `Derived metric Allowed_To_Billed_Ratio is absent for ${selectedRecord.record_id}. Source components Billed_Amount and Allowed_Amount are present.`
-      contextData = { source_inputs_available: true, layer: 'DATA_QUALITY' }
-    } else if (isAnomalous) {
-      issueType = 'ANOMALY_DETECTION_STATISTICAL_FLAG'
-      issueDescription = `Record ${selectedRecord.record_id} is flagged as anomalous (Severity: ${selectedRecord.severity}) by ML detection engines.`
-      contextData = { layer: 'ANOMALY_DETECTION' }
-    } else {
-      issueType = 'ANOMALY_DETECTION_STATISTICAL_FLAG'
-      issueDescription = `Record ${selectedRecord.record_id} has been evaluated by the monitoring pipeline with severity ${selectedRecord.severity || 'LOW'}.`
-      contextData = { layer: 'ANOMALY_DETECTION' }
-    }
-
-    return {
-      run_id: runId || 'RUN-CURRENT',
-      record_id: selectedRecord.record_id,
-      issue_type: issueType,
-      issue_description: issueDescription,
-      evidence: evidenceList,
-      root_cause: selectedRecord.likely_root_cause || '',
-      context_data: contextData,
-    }
-  }, [selectedRecord, full, anomalySignals, runId])
-
-  /* Evaluate on record change */
+  /* Evaluate on record change — keyed ONLY on record_id to prevent infinite loops */
   useEffect(() => {
     if (!selectedRecord?.record_id) return
     setEvaluation(null)
@@ -123,41 +58,93 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
     setConfirmOpen(false)
     setError(null)
 
+    // Build payload inline using current ref value (stable across re-renders)
+    const rec = selectedRecordRef.current
+    const fr = rec?.full_record || {}
+    const sigs = rec?.anomaly_signals || {}
+
+    const evidenceList = []
+    if (rec?.record_id) evidenceList.push({ source: 'SOURCE_RECORD', field: 'Record_ID', value: rec.record_id, authority: 'SOURCE' })
+    if (fr.Billed_Amount !== undefined) evidenceList.push({ source: 'SOURCE_RECORD', field: 'Billed_Amount', value: fr.Billed_Amount, authority: 'SOURCE' })
+    if (fr.Allowed_Amount !== undefined) evidenceList.push({ source: 'SOURCE_RECORD', field: 'Allowed_Amount', value: fr.Allowed_Amount, authority: 'SOURCE' })
+    if (fr.SLA_Status !== undefined) evidenceList.push({ source: 'SLA_ENGINE', field: 'SLA_Status', value: fr.SLA_Status, authority: 'BACKEND' })
+    if (sigs.iso_score !== undefined) evidenceList.push({ source: 'ISOLATION_FOREST', field: 'ISO_Score', value: sigs.iso_score, authority: 'BACKEND' })
+    if (Array.isArray(rec?.evidence)) rec.evidence.forEach(ev => evidenceList.push({ source: 'RAG_KB', field: 'Policy_Finding', value: ev, authority: 'RAG' }))
+    if (rec?.likely_root_cause) evidenceList.push({ source: 'RCA_AGENT', field: 'Root_Cause', value: rec.likely_root_cause, authority: 'LLM' })
+
+    const isAnomalous = fr.ML_Is_Anomalous === true || fr.ISO_Is_Anomaly === true
+    const isSlaBreached = fr.SLA_Status === 'BREACHED' || fr.SLA_Breached === true
+    const missingDerived = fr.Allowed_To_Billed_Ratio === undefined || fr.Allowed_To_Billed_Ratio === null
+    const missingSla = isSlaBreached && !fr.SLA_Status
+
+    let issueType, issueDescription, contextData = {}
+    if (missingSla) {
+      issueType = 'SERIALIZATION_MISSING_SLA_OUTPUT'
+      issueDescription = `SLA engine produced BREACHED result for ${rec.record_id} but final output has null SLA status.`
+      contextData = { authoritative_result_available: true, layer: 'SLA' }
+    } else if (missingDerived && evidenceList.some(e => e.authority === 'SOURCE')) {
+      issueType = 'DATA_QUALITY_MISSING_DERIVABLE_FEATURE'
+      issueDescription = `Derived metric Allowed_To_Billed_Ratio is absent for ${rec.record_id}. Source inputs are present.`
+      contextData = { source_inputs_available: true, layer: 'DATA_QUALITY' }
+    } else if (isAnomalous) {
+      issueType = 'ANOMALY_DETECTION_STATISTICAL_FLAG'
+      issueDescription = `Record ${rec.record_id} flagged as anomalous (Severity: ${rec.severity}) by ML detection engines.`
+      contextData = { layer: 'ANOMALY_DETECTION' }
+    } else {
+      issueType = 'ANOMALY_DETECTION_STATISTICAL_FLAG'
+      issueDescription = `Record ${rec.record_id} processed normally with severity ${rec.severity || 'LOW'}.`
+      contextData = { layer: 'ANOMALY_DETECTION' }
+    }
+
+    const payload = {
+      run_id: runId || 'RUN-CURRENT',
+      record_id: rec.record_id,
+      issue_type: issueType,
+      issue_description: issueDescription,
+      evidence: evidenceList,
+      root_cause: rec.likely_root_cause || '',
+      context_data: contextData,
+    }
+
     setEvalLoading(true)
-    const payload = buildIssuePayload()
     evaluateAutoResolution(payload)
       .then(data => setEvaluation(data))
       .catch(err => setError('Evaluation failed: ' + err.message))
       .finally(() => setEvalLoading(false))
-  }, [selectedRecord?.record_id, buildIssuePayload])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRecord?.record_id, runId])
 
   /* Load history */
-  const loadHistory = useCallback(() => {
+  const loadHistory = () => {
     if (!runId) return
     setHistoryLoading(true)
     getAutoResolutionHistory(runId)
       .then(data => setHistory(data))
       .catch(() => setHistory([]))
       .finally(() => setHistoryLoading(false))
-  }, [runId])
+  }
 
-  /* Execute fix */
+  /* Execute fix — uses evaluation result directly (no need to rebuild payload) */
   const handleApplyFix = async () => {
     if (!evaluation) return
     setConfirmOpen(false)
     setExecLoading(true)
     setError(null)
 
-    const payload = buildIssuePayload()
+    const rec = selectedRecordRef.current
     try {
       const result = await executeAutoResolution({
-        run_id: payload.run_id,
-        record_id: payload.record_id,
+        run_id: runId || 'RUN-CURRENT',
+        record_id: rec?.record_id || evaluation.record_id,
         issue_id: evaluation.issue_id,
         issue_type: evaluation.issue_type,
         action_id: evaluation.proposed_action,
         executed_by: 'Operator (Verified)',
-        context_data: { ...payload.context_data, evidence: payload.evidence, root_cause: payload.root_cause },
+        context_data: {
+          layer: evaluation.layer,
+          evidence: evaluation.evidence,
+          root_cause: evaluation.root_cause,
+        },
       })
       setExecResult(result)
       loadHistory()
