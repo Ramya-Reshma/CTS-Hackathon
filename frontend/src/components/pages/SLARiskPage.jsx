@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { getAnomalyDetail } from '../../services/api'
 import { fmtLabel, fmtNum, fmtPct } from '../../utils/statusUtils'
+import { exportSLAReportPDF } from '../../utils/pdfExport'
 import './shared-pages.css'
 
 export default function SLARiskPage() {
@@ -10,6 +11,8 @@ export default function SLARiskPage() {
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
 
   // Auto-select first record on mount
   useEffect(() => {
@@ -27,6 +30,21 @@ export default function SLARiskPage() {
       .catch(err => console.error('Failed to load SLA record detail:', err))
       .finally(() => setDetailLoading(false))
   }, [selectedId])
+
+  const handleDownloadReport = () => {
+    setExporting(true)
+    setExportSuccess(false)
+    try {
+      exportSLAReportPDF({ runInfo: currentRun, statistics, anomalies })
+      setExportSuccess(true)
+      setTimeout(() => setExportSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to export SLA report:', err)
+      alert('Unable to generate SLA report.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -78,12 +96,6 @@ export default function SLARiskPage() {
     ? 'Yes'
     : (isNotAssessable ? 'Not Assessable' : 'No')
     
-  const breachRisk = full.SLA_Risk === 'HIGH'
-    ? 'High Exposure'
-    : full.SLA_Risk === 'MEDIUM'
-      ? 'Moderate Exposure'
-      : (slaStatus === 'BREACHED' ? 'Confirmed Breach' : (isNotAssessable ? 'Not Assessable' : 'Low Exposure'))
-
   const filtered = anomalies.filter(a => {
     return !searchTerm || (a.record_id && a.record_id.toLowerCase().includes(searchTerm.toLowerCase()))
   })
@@ -91,9 +103,35 @@ export default function SLARiskPage() {
   return (
     <div className="ml-page">
       {/* Page Header */}
-      <div className="ml-page-heading">
-        <h1>SLA Risk</h1>
-        <p>Processing timeline, SLA exposure, and breach monitoring across the entire claims population and individual records.</p>
+      <div className="ml-exec-header">
+        <div>
+          <div className="ml-section-sub">Turnaround Latency &amp; Risk Monitoring</div>
+          <h1 className="ml-page-title">SLA Risk Surveillance</h1>
+          <p className="ml-page-description">
+            Service Level Agreement compliance tracking and operational turnaround latency monitoring across claims encounters.
+          </p>
+        </div>
+        <div className="ml-exec-actions">
+          <button
+            className="ml-btn-report"
+            onClick={handleDownloadReport}
+            disabled={exporting}
+            id="btn-download-sla-report"
+          >
+            {exporting ? (
+              <><span className="spinner-small" /> Generating PDF...</>
+            ) : exportSuccess ? (
+              <>✓ Downloaded</>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download SLA Risk Report
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────── */}

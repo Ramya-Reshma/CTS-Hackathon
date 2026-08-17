@@ -1,11 +1,29 @@
 import React, { useState } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
 import { fmtNum, fmtPct } from '../../utils/statusUtils'
+import { exportDataQualityReportPDF } from '../../utils/pdfExport'
 import './shared-pages.css'
 
 export default function DataQualityPage() {
-  const { statistics, isLoading, error, currentRun } = useMedlyticsData()
+  const { anomalies, statistics, isLoading, error, currentRun } = useMedlyticsData()
   const [showValidationDetails, setShowValidationDetails] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
+
+  const handleDownloadReport = () => {
+    setExporting(true)
+    setExportSuccess(false)
+    try {
+      exportDataQualityReportPDF({ runInfo: currentRun, statistics, anomalies })
+      setExportSuccess(true)
+      setTimeout(() => setExportSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to export DQ report:', err)
+      alert('Unable to generate data quality report.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -139,9 +157,36 @@ export default function DataQualityPage() {
 
   return (
     <div className="ml-page">
-      <div className="ml-page-heading">
-        <h1>Data Quality</h1>
-        <p>Source data reliability, completeness, and schema validation. Verifies integrity prior to downstream monitoring.</p>
+      {/* Page Header */}
+      <div className="ml-exec-header">
+        <div>
+          <div className="ml-section-sub">Source Reliability &amp; Field Integrity</div>
+          <h1 className="ml-page-title">Data Quality Surveillance</h1>
+          <p className="ml-page-description">
+            Source data reliability, completeness, and schema validation. Verifies integrity prior to downstream monitoring.
+          </p>
+        </div>
+        <div className="ml-exec-actions">
+          <button
+            className="ml-btn-report"
+            onClick={handleDownloadReport}
+            disabled={exporting}
+            id="btn-download-dq-report"
+          >
+            {exporting ? (
+              <><span className="spinner-small" /> Generating PDF...</>
+            ) : exportSuccess ? (
+              <>✓ Downloaded</>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download Data Quality Report
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="ml-section-label">Overall Quality Assessment</div>

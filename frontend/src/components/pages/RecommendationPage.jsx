@@ -7,6 +7,7 @@ import {
   getAutoResolutionHistory,
 } from '../../services/api'
 import { fmtLabel, fmtNum } from '../../utils/statusUtils'
+import { exportRecommendationReportPDF } from '../../utils/pdfExport'
 import './shared-pages.css'
 
 /* ─── Helper constants ─── */
@@ -503,6 +504,8 @@ export default function RecommendationPage() {
   const [showMonitoringDetails, setShowMonitoringDetails] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [runId, setRunId] = useState(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
 
   // Derive run ID from statistics
   useEffect(() => {
@@ -536,6 +539,27 @@ export default function RecommendationPage() {
     }, 600)
   }
 
+  const handleDownloadReport = () => {
+    setExporting(true)
+    setExportSuccess(false)
+    try {
+      exportRecommendationReportPDF({
+        runInfo: currentRun,
+        statistics,
+        anomalies,
+        selectedRecord,
+        evaluation: null
+      })
+      setExportSuccess(true)
+      setTimeout(() => setExportSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to export recommendation report:', err)
+      alert('Unable to generate recommendation report.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -564,9 +588,35 @@ export default function RecommendationPage() {
   return (
     <div className="ml-page">
       {/* Header */}
-      <div className="ml-page-heading">
-        <h1>Recommendation Engine</h1>
-        <p>Evidence-grounded operational recommendations with cross-layer automated resolution capabilities.</p>
+      <div className="ml-exec-header">
+        <div>
+          <div className="ml-section-sub">Evidence Grounding &amp; Auto-Resolution</div>
+          <h1 className="ml-page-title">Recommendation Engine</h1>
+          <p className="ml-page-description">
+            Evidence-grounded operational recommendations with cross-layer automated resolution capabilities.
+          </p>
+        </div>
+        <div className="ml-exec-actions">
+          <button
+            className="ml-btn-report"
+            onClick={handleDownloadReport}
+            disabled={exporting}
+            id="btn-download-rec-report"
+          >
+            {exporting ? (
+              <><span className="spinner-small" /> Generating PDF...</>
+            ) : exportSuccess ? (
+              <>✓ Downloaded</>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download Recommendation Report
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>

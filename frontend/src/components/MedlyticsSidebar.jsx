@@ -1,5 +1,6 @@
 import React from 'react'
 import { NAV_PAGES } from '../pages/MedlyticsApp'
+import MedlyticsLogo from './MedlyticsLogo'
 import './MedlyticsSidebar.css'
 
 // Inline SVG icons
@@ -37,7 +38,7 @@ const icons = {
       <line x1="12" y1="3" x2="12" y2="15"/>
     </svg>
   ),
-import MedlyticsLogo from './MedlyticsLogo'
+}
 
 export default function MedlyticsSidebar({ activePage, onNavigate, open, onClose, user, onLogout }) {
   // Analytical workflow items vs administrative uploads
