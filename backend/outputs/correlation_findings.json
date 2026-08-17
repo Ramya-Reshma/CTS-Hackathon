@@ -2,34 +2,78 @@
   "relationships_checked": [
     {
       "name": "Paid_Amount ~ Allowed_Amount",
-      "pearson_r": 0.9975,
-      "fitted_coefficient": 0.9697,
-      "fitted_intercept": 1325.0135,
-      "residual_std": 7546.93,
-      "anomalies_flagged": 1
+      "pearson_r": 0.9929,
+      "fitted_coefficient": 0.9921,
+      "fitted_intercept": 30.0384,
+      "residual_std": 139.49,
+      "anomalies_flagged": 5
     },
     {
       "name": "Quantity_Dispensed ~ Days_Supply",
-      "pearson_r": 0.8186,
-      "fitted_coefficient": 8.2444,
-      "fitted_intercept": -155.4838,
-      "residual_std": 462.69,
+      "pearson_r": 0.9067,
+      "fitted_coefficient": 1.0491,
+      "fitted_intercept": 1.8947,
+      "residual_std": 9.12,
       "anomalies_flagged": 0
     }
   ],
   "summary": {
-    "combined_anomalies": 1,
+    "combined_anomalies": 5,
     "combined_anomalies_pct": 2.0
   },
   "sample_flagged_records": [
     {
-      "Record_ID": "TEST100037",
+      "Record_ID": "TEST_0035",
       "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-9000000001036",
+      "BENE_ID": "-10000010279289.0",
       "Correlation_Anomaly": true,
-      "Correlation_Residual": 48330.00432201132,
+      "Correlation_Residual": 891.191755701746,
       "Quantity_Supply_Anomaly": false,
-      "Quantity_Supply_Residual": -64.84757419159251,
+      "Quantity_Supply_Residual": 2.6315789473684177,
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    },
+    {
+      "Record_ID": "TEST_0085",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000010279289.0",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 891.191755701746,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": 2.6315789473684177,
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    },
+    {
+      "Record_ID": "TEST_0135",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000010279289.0",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 891.191755701746,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": 2.6315789473684177,
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    },
+    {
+      "Record_ID": "TEST_0185",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000010279289.0",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 891.191755701746,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": 2.6315789473684177,
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    },
+    {
+      "Record_ID": "TEST_0235",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000010279289.0",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 891.191755701746,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": 2.6315789473684177,
       "Correlation_Module_Anomaly_Count": 1,
       "Correlation_Module_Is_Anomalous": true
     }
