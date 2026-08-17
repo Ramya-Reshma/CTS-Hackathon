@@ -1,0 +1,39 @@
+{
+  "incident_id": "PH202965",
+  "record_type": "PHARMACY_CLAIM",
+  "severity": "MEDIUM",
+  "summary": "",
+  "anomaly_signals": {},
+  "evidence": [
+    "anomaly_type: Provider",
+    "record_type: PHARMACY_CLAIM",
+    "denial_reason_code: ",
+    "statistical: {'zscore': False, 'iqr': False}",
+    "quantity_supply_anomaly: False",
+    "distance_to_historical: 0.1944"
+  ],
+  "observed_facts": [
+    "record_id: PH202965",
+    "record_type: PHARMACY_CLAIM",
+    "beneficiary_id: -10000010255720.0",
+    "provider_npi: 1906831683.0",
+    "isolation_forest: {'is_anomaly': True, 'raw_score': -0.02339428051114789, 'severity_0to1': 0.5500799348085484}",
+    "correlation: {'residual': -10.520163391823644}",
+    "ml_signal_count: 1"
+  ],
+  "possible_causes": [
+    "Provider data inconsistency in pharmacy claims",
+    "Source-data issue related to provider NPI 1906831683.0",
+    "Anomalous payment pattern for this provider's pharmacy claims"
+  ],
+  "likely_root_cause": "provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
+  "confidence": 0.5,
+  "impact": "",
+  "recommended_actions": [
+    "Validate provider master data for NPI 1906831683.0",
+    "Review pharmacy claim patterns for this provider",
+    "Normalize pharmacy claims data by specialty and geography",
+    "Investigate potential coding or contract discrepancies"
+  ],
+  "additional_checks_required": []
+}

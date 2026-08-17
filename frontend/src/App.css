@@ -1,0 +1,33 @@
+.app {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+.app-loading,
+.app-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+.app-error {
+  flex-direction: column;
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.error-container h1 {
+  color: #d32f2f;
+  margin-bottom: 16px;
+}
+
+.error-container p {
+  font-size: 16px;
+  margin-bottom: 12px;
+}

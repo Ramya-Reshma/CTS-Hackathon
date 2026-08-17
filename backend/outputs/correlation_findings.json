@@ -1,0 +1,37 @@
+{
+  "relationships_checked": [
+    {
+      "name": "Paid_Amount ~ Allowed_Amount",
+      "pearson_r": 0.9975,
+      "fitted_coefficient": 0.9697,
+      "fitted_intercept": 1325.0135,
+      "residual_std": 7546.93,
+      "anomalies_flagged": 1
+    },
+    {
+      "name": "Quantity_Dispensed ~ Days_Supply",
+      "pearson_r": 0.8186,
+      "fitted_coefficient": 8.2444,
+      "fitted_intercept": -155.4838,
+      "residual_std": 462.69,
+      "anomalies_flagged": 0
+    }
+  ],
+  "summary": {
+    "combined_anomalies": 1,
+    "combined_anomalies_pct": 2.0
+  },
+  "sample_flagged_records": [
+    {
+      "Record_ID": "TEST100037",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-9000000001036",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 48330.00432201132,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": -64.84757419159251,
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    }
+  ]
+}

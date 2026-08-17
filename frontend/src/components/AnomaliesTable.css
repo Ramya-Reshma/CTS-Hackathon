@@ -1,0 +1,174 @@
+.anomalies-table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.anomalies-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.anomalies-table thead {
+  background-color: #f9f9f9;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.anomalies-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.anomalies-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s ease;
+}
+
+.anomalies-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.anomalies-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #333;
+}
+
+.col-priority { width: 120px; }
+.col-record-id { width: 120px; }
+.col-type { width: 140px; }
+.col-severity { width: 110px; }
+.col-anomaly { width: 150px; }
+.col-signal { flex: 1; }
+.col-confidence { width: 100px; text-align: center; }
+.col-action { width: 80px; text-align: center; }
+
+/* Priority Badge */
+.priority-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  color: white;
+}
+
+.priority-1-critical {
+  background-color: #b71c1c;
+}
+
+.priority-2-high {
+  background-color: #d32f2f;
+}
+
+.priority-3-medium {
+  background-color: #f57c00;
+}
+
+.priority-4-low {
+  background-color: #388e3c;
+}
+
+/* Record ID */
+.record-id-code {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Type Badge */
+.type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #e3f2fd;
+  color: #0066cc;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Severity Badge */
+.severity-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.severity-high {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.severity-medium {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.severity-low {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+/* Signal Text */
+.signal-text {
+  color: #666;
+  word-break: break-word;
+}
+
+/* Confidence */
+.confidence-value {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #333;
+}
+
+/* View Button */
+.view-button {
+  background-color: #667eea;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.view-button:hover {
+  background-color: #764ba2;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .col-signal {
+    width: auto;
+  }
+
+  .anomalies-table td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .anomalies-table th {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+}
