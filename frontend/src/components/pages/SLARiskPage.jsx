@@ -585,7 +585,7 @@ export default function SLARiskPage() {
                     <span className="ml-field-value">{slaTarget}</span>
                   </div>
                   <div className="ml-field-row">
-                    <span className="ml-field-label">Processing Latency</span>
+                    <span className="ml-field-label">{recordBreachCategories.some(cat => cat === 'PENDING_OUTCOME' || cat === 'PENDING-OUTCOME') ? 'Pending Days' : 'Processing Latency'}</span>
                     <span className="ml-field-value">{processingLatency}</span>
                   </div>
                   <div className="ml-field-row">
@@ -636,6 +636,18 @@ export default function SLARiskPage() {
                           )}
                         </div>
                       </div>
+                      {recordBreachCategories.some(cat => cat === 'SERVICE_PAYMENT_BASED' || cat === 'SERVICE-PAYMENT-BASED') && (
+                        <>
+                          <div className="ml-field-row">
+                            <span className="ml-field-label">Billed Amount</span>
+                            <span className="ml-field-value">{full.Billed_Amount != null ? `$${fmtNum(full.Billed_Amount, 2)}` : (full.billed_amount != null ? `$${fmtNum(full.billed_amount, 2)}` : 'N/A')}</span>
+                          </div>
+                          <div className="ml-field-row">
+                            <span className="ml-field-label">Allowed Amount</span>
+                            <span className="ml-field-value">{full.Allowed_Amount != null ? `$${fmtNum(full.Allowed_Amount, 2)}` : (full.allowed_amount != null ? `$${fmtNum(full.allowed_amount, 2)}` : 'N/A')}</span>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
