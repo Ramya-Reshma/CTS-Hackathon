@@ -89,10 +89,6 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
 
             payload["record_id"] = record_id
             consolidated.append(payload)
-            (output_dir / f"rca_{record_id}.json").write_text(
-                json.dumps(payload, indent=2),
-                encoding="utf-8",
-            )
             success += 1
         except Exception as e:
             logger.warning(f"[PIPELINE] RCA generation failed for {record_id}: {e}")

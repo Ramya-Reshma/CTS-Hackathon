@@ -36,8 +36,10 @@ export default function UploadsPage({ onNavigateToOverview }) {
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (!file.name.toLowerCase().endsWith('.csv')) {
-        setErrorMessage('Unsupported file format. Please select a CSV file (.csv).')
+      const validExts = ['.csv', '.xls', '.xlsx']
+      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'))
+      if (!validExts.includes(ext)) {
+        setErrorMessage('Unsupported file format. Please select a CSV, XLS, or XLSX file.')
         return
       }
       setSelectedFile(file)
@@ -61,8 +63,10 @@ export default function UploadsPage({ onNavigateToOverview }) {
     setIsDragOver(false)
     const file = e.dataTransfer.files?.[0]
     if (file) {
-      if (!file.name.toLowerCase().endsWith('.csv')) {
-        setErrorMessage('Unsupported file format. Please drop a CSV file (.csv).')
+      const validExts = ['.csv', '.xls', '.xlsx']
+      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'))
+      if (!validExts.includes(ext)) {
+        setErrorMessage('Unsupported file format. Please drop a CSV, XLS, or XLSX file.')
         return
       }
       setSelectedFile(file)
@@ -79,7 +83,7 @@ export default function UploadsPage({ onNavigateToOverview }) {
     try {
       const result = await uploadAndAnalyze(selectedFile)
       setUploadStatus('completed')
-      
+
       // Update global current run
       if (result.run_id) {
         const runPayload = {
@@ -93,10 +97,10 @@ export default function UploadsPage({ onNavigateToOverview }) {
         }
         setCurrentRun(runPayload)
       }
-      
+
       // Refresh historical runs table
       await fetchRunsList()
-      
+
       // Clear file selection after brief moment
       setTimeout(() => {
         setSelectedFile(null)
@@ -173,7 +177,7 @@ export default function UploadsPage({ onNavigateToOverview }) {
             <h2>Data Ingestion &amp; Pipeline Execution</h2>
             <p>Upload raw or normalized healthcare claims and authorization CSV records for end-to-end monitoring</p>
           </div>
-          <span className="type-badge" style={{ fontSize: '11px' }}>Supported: CSV</span>
+          <span className="type-badge" style={{ fontSize: '11px' }}>Supported: CSV · XLS · XLSX</span>
         </div>
 
         <div style={{ padding: '24px' }}>
@@ -196,16 +200,16 @@ export default function UploadsPage({ onNavigateToOverview }) {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv"
+              accept=".csv,.xls,.xlsx"
               style={{ display: 'none' }}
               onChange={handleFileChange}
             />
 
             <div style={{ width: '48px', height: '48px', margin: '0 auto 12px', background: 'var(--navy-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--navy-700)' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             </div>
 
@@ -224,7 +228,7 @@ export default function UploadsPage({ onNavigateToOverview }) {
               Browse Files
             </button>
             <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '12px' }}>
-              Supported format: CSV (.csv)
+              Supported formats: CSV (.csv) · Excel (.xls, .xlsx)
             </div>
           </div>
 
@@ -234,10 +238,10 @@ export default function UploadsPage({ onNavigateToOverview }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div style={{ width: '38px', height: '38px', background: 'var(--navy-50)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--navy-700)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                 </div>
                 <div>
@@ -245,7 +249,7 @@ export default function UploadsPage({ onNavigateToOverview }) {
                     {selectedFile.name}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
-                    CSV · {formatFileSize(selectedFile.size)} · Ready for analysis
+                    {selectedFile.name.toLowerCase().endsWith('.xlsx') || selectedFile.name.toLowerCase().endsWith('.xls') ? 'Excel' : 'CSV'} · {formatFileSize(selectedFile.size)} · Ready for analysis
                   </div>
                 </div>
               </div>
@@ -357,8 +361,8 @@ export default function UploadsPage({ onNavigateToOverview }) {
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--navy-900)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--navy-600)' }}>
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
                           </svg>
                           {run.filename}
                           {isCurrent && (

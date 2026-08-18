@@ -34,7 +34,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
   // --- Real Application Data Metrics ---
   const sev = currentRun?.severity_summary || statistics?.by_severity || {}
   const totalAnomalies = currentRun?.total_anomalies ?? statistics?.total_anomalies ?? anomalies.length
-  const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? (anomalies.length > 0 ? 10000 : 0)
+  const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? 0
   const dqScore = statistics?.overall_data_quality_score ?? 88.8
   const slaSummary = statistics?.sla_summary || null
   const slaBreaches = slaSummary?.records_breached ?? anomalies.filter(a => {
@@ -123,7 +123,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
             ) : (
               <>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 Download Executive Report
               </>

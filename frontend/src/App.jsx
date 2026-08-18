@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from './hooks/useStore'
-import { healthCheck, getMe, getRuns, logoutUser } from './services/api'
+import { healthCheck, getMe, logoutUser } from './services/api'
 import LoginPage from './pages/Auth/LoginPage'
 import RegisterPage from './pages/Auth/RegisterPage'
 import VerifyEmailPage from './pages/Auth/VerifyEmailPage'
@@ -18,6 +18,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [authView, setAuthView] = useState('login') // 'login', 'register', 'verify-email', 'pending-approval'
   const [authContext, setAuthContext] = useState({})
+  const [initialPage, setInitialPage] = useState('uploads')
 
   // Check URL query parameters for direct verification links (e.g. /verify-email?token=...)
   useEffect(() => {
@@ -43,26 +44,8 @@ export default function App() {
             const userData = await getMe()
             if (userData && userData.approval_status === 'APPROVED') {
               setUser(userData)
-              // Load latest run if available
-              if (!currentRun) {
-                try {
-                  const runsData = await getRuns({ page: 1, pageSize: 5 })
-                  const records = runsData?.records || []
-                  if (records.length > 0) {
-                    const latest = records[0]
-                    setCurrentRun({
-                      run_id: latest.id,
-                      status: latest.processing_status,
-                      filename: latest.filename,
-                      total_records: latest.total_records,
-                      total_anomalies: latest.anomaly_count,
-                      severity_summary: latest.severity_summary,
-                    })
-                  }
-                } catch (e) {
-                  console.warn('Could not load latest run:', e)
-                }
-              }
+              // DO NOT auto-load last run — user must upload or select explicitly
+              setInitialPage('uploads')
             } else if (userData && userData.approval_status === 'PENDING_APPROVAL') {
               setAuthView('pending-approval')
               setAuthContext({ email: userData.email })
@@ -87,25 +70,10 @@ export default function App() {
     initApp()
   }, [])
 
-  const handleLoginSuccess = async (authenticatedUser) => {
+  const handleLoginSuccess = (authenticatedUser) => {
+    // Always start fresh — send user to Uploads page, no stale data
+    setInitialPage('uploads')
     setUser(authenticatedUser)
-    try {
-      const runsData = await getRuns({ page: 1, pageSize: 5 })
-      const records = runsData?.records || []
-      if (records.length > 0) {
-        const latest = records[0]
-        setCurrentRun({
-          run_id: latest.id,
-          status: latest.processing_status,
-          filename: latest.filename,
-          total_records: latest.total_records,
-          total_anomalies: latest.anomaly_count,
-          severity_summary: latest.severity_summary,
-        })
-      }
-    } catch (e) {
-      console.warn('Could not load run upon login:', e)
-    }
   }
 
   const handleLogout = async () => {
@@ -145,7 +113,7 @@ export default function App() {
   if (user && user.approval_status === 'APPROVED') {
     return (
       <div className="app">
-        <MedlyticsApp user={user} onLogout={handleLogout} />
+        <MedlyticsApp user={user} onLogout={handleLogout} initialPage={initialPage} />
       </div>
     )
   }

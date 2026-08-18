@@ -1,7 +1,9 @@
 import json
 import re
+import time
 import requests
 import boto3
+from botocore.exceptions import ClientError, EndpointConnectionError
 from typing import Any, Dict, List, Optional
 from UC10_Anomaly_Monitor.config import settings
 from UC10_Anomaly_Monitor.rca import prompts, schemas, rag
@@ -24,8 +26,14 @@ class RCAAgent:
         print(f"[RCAAgent] Initialized: use_bedrock={self.use_bedrock}, model={self.bedrock_model_id if self.use_bedrock else self.lm_studio_model}, region={self.aws_region}")
 
     def _call_bedrock(self, messages: list, system_prompt: Optional[str] = None) -> str:
-        """Call AWS Bedrock using the Converse API with existing configuration."""
-        client = boto3.client("bedrock-runtime", region_name=self.aws_region)
+        """Call AWS Bedrock using the Converse API with retry/backoff for transient errors."""
+        from botocore.config import Config
+        boto_config = Config(
+            connect_timeout=30,
+            read_timeout=600,
+            retries={"max_attempts": 3, "mode": "adaptive"},
+        )
+        client = boto3.client("bedrock-runtime", region_name=self.aws_region, config=boto_config)
         print(f"[RCAAgent] Invoking AWS Bedrock model: {self.bedrock_model_id} (region={self.aws_region})")
         
         bedrock_messages = []
@@ -48,14 +56,33 @@ class RCAAgent:
         if system_prompt:
             converse_kwargs["system"] = [{"text": system_prompt}]
         
-        response = client.converse(**converse_kwargs)
-        
-        if response.get("output") and response["output"].get("message"):
-            content_blocks = response["output"]["message"].get("content", [])
-            if content_blocks and "text" in content_blocks[0]:
-                return content_blocks[0]["text"]
-        
-        raise ValueError(f"Unexpected Bedrock response structure: {response}")
+        # Retry with exponential backoff for transient errors
+        retryable_codes = {"ThrottlingException", "ServiceUnavailableException", "ModelErrorException"}
+        max_attempts = 5
+        last_exc = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = client.converse(**converse_kwargs)
+                if response.get("output") and response["output"].get("message"):
+                    content_blocks = response["output"]["message"].get("content", [])
+                    if content_blocks and "text" in content_blocks[0]:
+                        return content_blocks[0]["text"]
+                raise ValueError(f"Unexpected Bedrock response structure: {response}")
+            except EndpointConnectionError as e:
+                last_exc = e
+                wait = 2 ** attempt
+                print(f"[RCAAgent] Endpoint connection error (attempt {attempt}/{max_attempts}), retrying in {wait}s...")
+                time.sleep(wait)
+            except ClientError as e:
+                err_code = e.response.get("Error", {}).get("Code", "")
+                if err_code in retryable_codes:
+                    last_exc = e
+                    wait = 2 ** attempt
+                    print(f"[RCAAgent] {err_code} (attempt {attempt}/{max_attempts}), retrying in {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise
+        raise last_exc or RuntimeError("Bedrock call failed after max retries.")
 
     def _call_lm_studio(self, messages: list) -> str:
         """Fallback to local LM Studio when configured."""

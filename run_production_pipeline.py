@@ -40,7 +40,7 @@ from backend.database import SessionLocal, init_db
 from backend.services.result_service import save_analysis_run
 
 
-def run_full_pipeline(input_excel_path: str = "data/claims_pharmacy_auth_monitor_dataset_final.xlsx"):
+def run_full_pipeline(input_excel_path: str = "Data/claims_pharmacy_auth_monitor_dataset_final.xlsx"):
     start_time = time.time()
     input_file = REPO_ROOT / input_excel_path
     
@@ -210,4 +210,4 @@ def run_full_pipeline(input_excel_path: str = "data/claims_pharmacy_auth_monitor
 
 
 if __name__ == "__main__":
-    run_full_pipeline("data/claims_pharmacy_auth_monitor_dataset_final.xlsx")
+    run_full_pipeline("Data/claims_pharmacy_auth_monitor_dataset_final.xlsx")

@@ -568,7 +568,40 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     overall_quality_score = quality_summary.get("overall_quality_score")
     overall_risk_level = quality_summary.get("overall_risk_level")
 
-    sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
+    # Compute SLA summary from the current run's DB records (not from the global file)
+    # This ensures counts always match the actual uploaded dataset size
+    if results:
+        sla_breached_count = 0
+        sla_at_risk_count = 0
+        sla_normal_count = 0
+        sla_not_assessable_count = 0
+        for r in results:
+            fr = r.full_record or {}
+            breach = fr.get("SLA_Breach") or fr.get("sla_breach")
+            status = fr.get("SLA_Status") or fr.get("sla_status", "")
+            risk = fr.get("SLA_Risk") or fr.get("sla_risk", "")
+            temporal = fr.get("Temporal_Validity") or fr.get("temporal_validity", "")
+            if temporal in ("NOT_ASSESSABLE", "NULL_NO_DATE", "NEGATIVE"):
+                sla_not_assessable_count += 1
+            elif breach is True or str(status).upper() == "BREACHED":
+                sla_breached_count += 1
+            elif str(risk).upper() in ("HIGH", "MEDIUM") or str(status).upper() == "AT_RISK":
+                sla_at_risk_count += 1
+            else:
+                sla_normal_count += 1
+        sla_total = run.total_records
+        sla_assessable = sla_total - sla_not_assessable_count
+        sla_summary = {
+            "total_records": sla_total,
+            "records_assessable": sla_assessable,
+            "records_not_assessable": sla_not_assessable_count,
+            "records_breached": sla_breached_count,
+            "records_at_risk": sla_at_risk_count,
+            "records_normal": sla_normal_count,
+        }
+    else:
+        # Fallback: load from file only if no DB records exist for this run
+        sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
 
     from services.processing_integrity import compute_processing_integrity
     integrity_data = compute_processing_integrity()

@@ -68,13 +68,15 @@ export default function SLARiskPage() {
 
   // --- Population Level Metrics ---
   const slaSummary = statistics?.sla_summary || null
-  const totalRecords = slaSummary?.total_records ?? currentRun?.total_records ?? statistics?.total_records ?? (anomalies.length > 0 ? 10000 : 0)
+  const totalRecords = slaSummary?.total_records ?? currentRun?.total_records ?? statistics?.total_records ?? 0
   const assessableCount = slaSummary?.records_assessable ?? (totalRecords - (slaSummary?.records_not_assessable ?? 0))
   const notAssessableCount = slaSummary?.records_not_assessable ?? 0
-  const breachedCount = slaSummary?.records_breached ?? anomalies.filter(a => {
+  const rawBreachedCount = slaSummary?.records_breached ?? anomalies.filter(a => {
     const fr = a.full_record || {}
     return fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
   }).length
+  // Cap breached count to never exceed totalRecords (guards against stale DB aggregate)
+  const breachedCount = totalRecords > 0 ? Math.min(rawBreachedCount, totalRecords) : rawBreachedCount
   const atRiskCount = slaSummary?.records_at_risk ?? 0
   const onTrackCount = slaSummary?.records_normal ?? Math.max(0, assessableCount - breachedCount - atRiskCount)
 
@@ -162,7 +164,7 @@ export default function SLARiskPage() {
             ) : (
               <>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 Download SLA Risk Report
               </>
