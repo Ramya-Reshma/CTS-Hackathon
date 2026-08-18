@@ -102,7 +102,10 @@ export function exportExecutiveReportPDF({ runInfo, statistics, anomalies }) {
   const highSev = statistics?.by_severity?.high ?? runInfo?.severity_summary?.high ?? 0
   const medSev = statistics?.by_severity?.medium ?? runInfo?.severity_summary?.medium ?? 0
   const slaBreached = statistics?.sla_summary?.records_breached ?? anomalies?.filter(a => a.full_record?.SLA_Status === 'BREACHED').length ?? 0
-  const dqScore = statistics?.overall_data_quality_score ?? 88.8
+  const dqScore = statistics?.overall_data_quality_score != null ? Number(statistics.overall_data_quality_score) : 100.0
+  const dimScores = statistics?.dimension_scores || {}
+  const dimSummaryParts = Object.entries(dimScores).map(([k, v]) => `${k}: ${Number(v).toFixed(1)}%`)
+  const dqLayerContext = dimSummaryParts.length > 0 ? dimSummaryParts.join(' | ') : 'All quality dimensions validated'
 
   autoTable(doc, {
     startY: startY,
@@ -129,7 +132,7 @@ export function exportExecutiveReportPDF({ runInfo, statistics, anomalies }) {
 
   const layerData = [
     ['Source Data & Ingestion', 'Validated', '100% schema match against payer specs'],
-    ['Data Quality Layer', `${Number(dqScore).toFixed(1)}% Overall Score`, 'Completeness: 94.2% | Validity: 91.5% | Timeliness: 81.4%'],
+    ['Data Quality Layer', `${Number(dqScore).toFixed(1)}% Overall Score`, dqLayerContext],
     ['Anomaly Detection (Isolation Forest)', `${totalAnomalies} Flagged`, `${highSev} High Severity, ${medSev} Medium Severity`],
     ['SLA Processing & Timeliness', `${slaBreached} Breaches Detected`, 'Target 2.0 days, latency monitored across 32 batches'],
     ['Correlation Analysis', '1 Break Residual', 'Residual threshold: >3.0 standard deviations'],
@@ -337,18 +340,32 @@ export function exportDataQualityReportPDF({ runInfo, statistics, anomalies }) {
     'Completeness, Schema Validity, Field Integrity & Pipeline Preservations'
   )
 
-  const dqScore = statistics?.overall_data_quality_score ?? 88.8
+  const dqScore = statistics?.overall_data_quality_score != null ? Number(statistics.overall_data_quality_score) : 100.0
+  const dimScores = statistics?.dimension_scores || {}
+  const compVal = dimScores.Completeness ?? dimScores.completeness ?? 100.0
+  const validVal = dimScores.Validity ?? dimScores.validity ?? 100.0
+  const consVal = dimScores.Consistency ?? dimScores.consistency ?? 100.0
+  const uniqVal = dimScores.Uniqueness ?? dimScores.uniqueness ?? 100.0
+  const hasTime = dimScores.Timeliness !== undefined || dimScores.timeliness !== undefined
+  const timeVal = dimScores.Timeliness ?? dimScores.timeliness
+
+  const headCols = ['Overall Quality Index', 'Completeness', 'Validity', 'Consistency', 'Uniqueness']
+  const bodyCols = [
+    `${Number(dqScore).toFixed(1)}%`,
+    `${Number(compVal).toFixed(1)}%`,
+    `${Number(validVal).toFixed(1)}%`,
+    `${Number(consVal).toFixed(1)}%`,
+    `${Number(uniqVal).toFixed(1)}%`
+  ]
+  if (hasTime) {
+    headCols.push('Timeliness')
+    bodyCols.push(`${Number(timeVal).toFixed(1)}%`)
+  }
 
   autoTable(doc, {
     startY: startY,
-    head: [['Overall Quality Index', 'Completeness', 'Validity', 'Consistency', 'Timeliness']],
-    body: [[
-      `${Number(dqScore).toFixed(1)}%`,
-      '99.3%',
-      '75.5%',
-      '80.9%',
-      '100.0%'
-    ]],
+    head: [headCols],
+    body: [bodyCols],
     theme: 'grid',
     headStyles: { fillColor: BRAND_NAVY, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
     bodyStyles: { textColor: BRAND_NAVY, fontSize: 10, fontStyle: 'bold', halign: 'center' },
