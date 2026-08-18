@@ -283,6 +283,16 @@ def _resolve_display_fields(record: Dict[str, Any], synthesis_record: Dict[str, 
     }
 
 
+from models import AnalysisRun, AnomalyResult, Dataset
+
+
+def generate_dataset_id() -> str:
+    """Generate a unique dataset ID."""
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    random_suffix = str(uuid4())[:6]
+    return f"DS-{timestamp}-{random_suffix}"
+
+
 def generate_run_id() -> str:
     """Generate a unique run ID."""
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
@@ -290,31 +300,84 @@ def generate_run_id() -> str:
     return f"RUN-{timestamp}-{random_suffix}"
 
 
+def save_dataset(
+    db: Session,
+    filename: str,
+    file_path: str,
+    row_count: int,
+    file_size_bytes: int,
+    schema_info: Optional[List[str]] = None,
+    dataset_id: Optional[str] = None,
+) -> Dataset:
+    """Save an uploaded dataset record to the database."""
+    ds_id = dataset_id or generate_dataset_id()
+    dataset = Dataset(
+        id=ds_id,
+        filename=filename,
+        file_path=file_path,
+        row_count=row_count,
+        file_size_bytes=file_size_bytes,
+        status="UPLOADED",
+        schema_info=schema_info or [],
+    )
+    db.add(dataset)
+    db.commit()
+    db.refresh(dataset)
+    logger.info(f"[DB] Saved dataset {ds_id}: {filename} ({row_count} rows)")
+    return dataset
+
+
+def get_dataset_by_id(db: Session, dataset_id: str) -> Optional[Dataset]:
+    """Fetch dataset metadata by ID."""
+    return db.query(Dataset).filter(Dataset.id == dataset_id).first()
+
+
+def load_dataset(dataset_id: str, db: Session):
+    """
+    Load dataframe for an uploaded dataset. Never falls back to default/training data.
+    """
+    import pandas as pd
+    dataset = get_dataset_by_id(db, dataset_id)
+    if not dataset:
+        raise FileNotFoundError(f"Uploaded dataset {dataset_id} is not available for this run")
+    
+    file_path = Path(dataset.file_path)
+    if not file_path.exists():
+        raise FileNotFoundError(f"Dataset file does not exist at: {dataset.file_path}")
+
+    if str(file_path).lower().endswith(('.xls', '.xlsx')):
+        return pd.read_excel(file_path)
+    return pd.read_csv(file_path)
+
+
 def save_analysis_run(
     db: Session,
     filename: str,
     report_json_path: str,
+    dataset_id: Optional[str] = None,
+    run_id: Optional[str] = None,
+    report_dir: Optional[str] = None,
     status: str = "completed",
     error_message: Optional[str] = None,
 ) -> AnalysisRun:
     """
-    Save an analysis run and its results to the database.
+    Save an analysis run and its results to the database with strict dataset lineage.
 
     Args:
         db: Database session
         filename: Name of uploaded file
         report_json_path: Path to final_anomaly_report.json from pipeline
+        dataset_id: ID of source uploaded dataset
+        run_id: Optional custom run ID
+        report_dir: Path to run artifacts directory
         status: Processing status
         error_message: If processing failed
 
     Returns:
         AnalysisRun object
-
-    Raises:
-        FileNotFoundError: If report JSON not found
-        json.JSONDecodeError: If report JSON is invalid
     """
-    run_id = generate_run_id()
+    run_id = run_id or generate_run_id()
+    rep_dir = report_dir or str(Path(report_json_path).resolve().parent)
 
     try:
         # Load the anomaly report
@@ -329,7 +392,7 @@ def save_analysis_run(
         if not isinstance(source_records, list):
             raise ValueError("Unsupported report format: expected a list of records")
 
-        # Keep total input records separate from detected anomalies.
+        # Keep total input records strictly equal to uploaded dataset records
         total_records = len(source_records)
         anomalies = [
             r for r in source_records
@@ -339,8 +402,7 @@ def save_analysis_run(
         ]
         synthesis_lookup = _load_synthesis_lookup(report_json_path)
 
-        # Count records and severities using synthesis severity when available,
-        # otherwise fall back to the ML score mapping.
+        # Count records and severities using synthesis severity when available
         severity_counts = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
         for anomaly in anomalies:
             record_id = _coalesce(anomaly, ["Record_ID", "Record ID", "record_id", "incident_id"], default="")
@@ -350,9 +412,14 @@ def save_analysis_run(
             if severity in severity_counts:
                 severity_counts[severity] += 1
 
-        # Create run record
+        # Load run-specific population SLA and Data Quality summaries
+        run_sla_summary = _load_sla_summary(report_json_path)
+        run_dq_summary = _load_quality_summary(report_json_path)
+
+        # Create run record with dataset lineage
         run = AnalysisRun(
             id=run_id,
+            dataset_id=dataset_id,
             filename=filename,
             total_records=total_records,
             anomaly_count=len(anomalies),
@@ -361,13 +428,23 @@ def save_analysis_run(
             low_count=severity_counts.get("LOW", 0),
             processing_status=status,
             error_message=error_message,
+            report_dir=rep_dir,
+            sla_summary=run_sla_summary,
+            quality_summary=run_dq_summary,
         )
 
         db.add(run)
+
+        # Update dataset status if linked
+        if dataset_id:
+            ds = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+            if ds:
+                ds.status = "ANALYZED"
+
         db.commit()
 
         logger.info(
-            f"[DB] Created analysis run: {run_id} (input_records={total_records}, anomalies={len(anomalies)})"
+            f"[DB] Created analysis run: {run_id} (dataset_id={dataset_id}, input_records={total_records}, anomalies={len(anomalies)})"
         )
 
         # Save individual anomaly results

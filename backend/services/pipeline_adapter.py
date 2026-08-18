@@ -285,9 +285,14 @@ def normalize_data_types(input_file_path: str, output_file_path: str) -> str:
         return input_file_path
 
 
-def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple[str, Dict[str, Any]]:
+def run_existing_pipeline(
+    input_file_path: str,
+    output_dir: str = None,
+    run_id: str = None,
+    dataset_id: str = None,
+) -> Tuple[str, Dict[str, Any]]:
     """
-    Call the EXISTING UC10 anomaly detection pipeline.
+    Call the EXISTING UC10 anomaly detection pipeline on ONLY the uploaded dataset.
 
     This function:
     1. Validates the input file
@@ -297,6 +302,8 @@ def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple
     Args:
         input_file_path: Path to uploaded CSV/XLSX/XLS file
         output_dir: Optional custom output directory
+        run_id: Optional Run ID
+        dataset_id: Optional Dataset ID
 
     Returns:
         Tuple of (report_json_path, metadata_dict)
@@ -310,7 +317,7 @@ def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple
 
     # Validate input file exists
     if not input_path.exists():
-        raise FileNotFoundError(f"Input file not found: {input_file_path}")
+        raise FileNotFoundError(f"Uploaded dataset is not available for this run: {input_file_path}")
 
     # Validate file extension
     valid_extensions = {'.csv', '.xls', '.xlsx'}
@@ -320,17 +327,19 @@ def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple
             f"Supported formats: {', '.join(valid_extensions)}"
         )
 
-    # Set output directory to log/ if not specified
+    # Set output directory to log/runs/{run_id} or log/ if not specified
     if output_dir is None:
         repo_root = Path(__file__).resolve().parents[2]
-        output_dir = str(repo_root / "log")
+        if run_id:
+            output_dir = str(repo_root / "log" / "runs" / run_id)
+        else:
+            output_dir = str(repo_root / "log")
 
     try:
-        logger.info(f"[PIPELINE] Starting existing UC10 pipeline with input: {input_file_path}")
+        logger.info(f"[PIPELINE] Starting UC10 pipeline with input: {input_file_path}")
         logger.info(f"[PIPELINE] Output directory: {output_dir}")
 
         # Normalize data types to avoid encoder errors (bool/str mixed types)
-        # This preprocesses the file but does NOT change the ML pipeline logic
         temp_dir = tempfile.mkdtemp(prefix="uc10_normalized_")
         normalized_file_path = Path(temp_dir) / input_path.name
         normalized_file_path = normalize_data_types(
@@ -339,11 +348,15 @@ def run_existing_pipeline(input_file_path: str, output_dir: str = None) -> Tuple
         )
 
         # Import and call the EXISTING pipeline (ML.main.run_pipeline)
-        # This is the ONLY modification: we're calling the existing function
         from ML.main import run_pipeline
 
-        # Call the EXISTING pipeline with normalized data (still same logic)
-        report_json_path = run_pipeline(normalized_file_path, output_dir=output_dir)
+        # Call the pipeline with ONLY the uploaded/normalized dataset
+        report_json_path = run_pipeline(
+            normalized_file_path,
+            output_dir=output_dir,
+            run_id=run_id,
+            dataset_id=dataset_id,
+        )
 
         # Generate RCA outputs after pipeline report is produced.
         rca_metadata = _generate_rca_outputs(report_json_path)
