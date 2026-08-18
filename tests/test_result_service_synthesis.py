@@ -50,10 +50,18 @@ def test_save_analysis_run_uses_synthesis_fields_as_display_source(tmp_path):
         encoding="utf-8",
     )
 
-    repo_root = Path(__file__).resolve().parents[1]
-    quality_path = repo_root / "log" / "quality_report.json"
+    quality_path = tmp_path / "quality_report.json"
     quality_path.write_text(
-        json.dumps({"overall_quality_score": 83.5, "overall_risk_level": "MEDIUM"}),
+        json.dumps({
+            "overall_quality_score": 83.5,
+            "overall_risk_level": "MEDIUM",
+            "dimension_scores": {
+                "Completeness": 90.0,
+                "Validity": 80.0,
+                "Consistency": 80.0,
+                "Uniqueness": 85.0
+            }
+        }),
         encoding="utf-8",
     )
 
