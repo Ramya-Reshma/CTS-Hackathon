@@ -27,13 +27,18 @@ class RCAAgent:
 
     def _call_bedrock(self, messages: list, system_prompt: Optional[str] = None) -> str:
         """Call AWS Bedrock using the Converse API with retry/backoff for transient errors."""
+        session = boto3.Session(region_name=self.aws_region)
+        creds = session.get_credentials()
+        if not creds:
+            raise RuntimeError("Unable to locate credentials: AWS Bedrock credentials not found")
+
         from botocore.config import Config
         boto_config = Config(
-            connect_timeout=30,
-            read_timeout=600,
-            retries={"max_attempts": 3, "mode": "adaptive"},
+            connect_timeout=5,
+            read_timeout=30,
+            retries={"max_attempts": 1, "mode": "standard"},
         )
-        client = boto3.client("bedrock-runtime", region_name=self.aws_region, config=boto_config)
+        client = session.client("bedrock-runtime", config=boto_config)
         print(f"[RCAAgent] Invoking AWS Bedrock model: {self.bedrock_model_id} (region={self.aws_region})")
         
         bedrock_messages = []
@@ -92,7 +97,7 @@ class RCAAgent:
             "temperature": 0.3
         }
         print(f"[RCAAgent] Calling LM Studio at {self.url}/chat/completions")
-        resp = requests.post(f"{self.url}/chat/completions", json=payload, timeout=self.timeout)
+        resp = requests.post(f"{self.url}/chat/completions", json=payload, timeout=1.5)
         resp.raise_for_status()
         data = resp.json()
         return data["choices"][0]["message"]["content"]
