@@ -27,8 +27,12 @@ if str(PROJECT_ROOT) not in sys.path:
 logger = logging.getLogger(__name__)
 
 
+_GLOBAL_LLM_AVAILABLE = None
+
+
 def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
     """Best-effort RCA generation for anomalous records using existing UC10 RCA modules."""
+    global _GLOBAL_LLM_AVAILABLE
     try:
         from UC10_Anomaly_Monitor.rca import evidence_builder, rag, agent
         from UC10_Anomaly_Monitor.config import settings
@@ -43,8 +47,8 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
     try:
         records = json.loads(report_path.read_text(encoding="utf-8"))
     except Exception as parse_error:
-        logger.warning(f"[PIPELINE] Could not parse report for RCA generation: {parse_error}")
-        return {"generated": False, "reason": "report_parse_failed"}
+        logger.warning(f"[PIPELINE] Failed to parse report for RCA: {parse_error}")
+        return {"generated": False, "reason": "invalid_report_format"}
 
     if not isinstance(records, list):
         return {"generated": False, "reason": "invalid_report_format"}
@@ -64,7 +68,6 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
     historical_kb = str(Path(settings.JSON_REPORT_PATH).parent / "historical_resolution_cases.json")
     consolidated = []
     success = 0
-    llm_available = True
 
     for record in anomalous_records:
         record_id = str(record.get("Record_ID", "")).strip()
@@ -75,7 +78,7 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
             ev = evidence_builder.build_evidence(record_id, report_path=str(report_path))
             similar_cases = rag.retrieve_similar_cases(ev, limit=5)
 
-            if llm_available:
+            if _GLOBAL_LLM_AVAILABLE is not False:
                 try:
                     rca_agent = agent.RCAAgent()
                     rca_report = rca_agent.run_rag_rca(ev, historical_cases=similar_cases)
@@ -85,9 +88,10 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
                         payload = rca_report
                     else:
                         payload = json.loads(rca_report.model_dump_json())
+                    _GLOBAL_LLM_AVAILABLE = True
                 except Exception as llm_error:
-                    logger.info(f"[PIPELINE] LLM RCA unavailable, using deterministic RAG recommendation: {llm_error}")
-                    llm_available = False
+                    logger.info(f"[PIPELINE] LLM RCA unavailable, switching to deterministic RAG recommendation: {llm_error}")
+                    _GLOBAL_LLM_AVAILABLE = False
                     payload = rag.generate_rag_recommendation(ev)
             else:
                 payload = rag.generate_rag_recommendation(ev)
