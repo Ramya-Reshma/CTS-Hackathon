@@ -339,6 +339,11 @@ def run_quality_checks(df, rules):
 # ============================================================
 def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
     dimensions = ["Completeness", "Validity", "Uniqueness", "Consistency"]
+    for res in rule_results:
+        dim_name = res.get("dimension")
+        if dim_name and dim_name not in dimensions:
+            dimensions.append(dim_name)
+
     dim_scores = {dim: 100.0 for dim in dimensions}
     dim_rates = {dim: [] for dim in dimensions}
     critical_failures = 0
@@ -346,16 +351,17 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
     failed_record_ids = set()
 
     for res in rule_results:
-        dim = res["dimension"]
+        dim = res.get("dimension", "Consistency")
         if dim not in dim_rates:
-            dim = "Consistency"  # fallback bucket
+            dim_rates[dim] = []
+            dim_scores[dim] = 100.0
 
-        dim_rates[dim].append(res["failure_rate_pct"])
+        dim_rates[dim].append(res.get("failure_rate_pct", 0.0))
 
-        if res["severity"] == "Critical" and res["status"] == "FAILED":
+        if res.get("severity") == "Critical" and res.get("status") == "FAILED":
             critical_failures += 1
 
-        if res["status"] == "FAILED":
+        if res.get("status") == "FAILED":
             top_failed_rules.append(res)
             for rid in res.get("sample_record_ids", []):
                 failed_record_ids.add(rid)
@@ -367,17 +373,23 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
 
     # Authoritative weighted aggregation across evaluated data quality dimensions
     # Canonical engine weights: Completeness (27.78%), Validity (27.78%), Uniqueness (22.22%), Consistency (22.22%)
-    dimension_weights = {
+    # Full 5-dimension weights (with Timeliness): Completeness (25%), Validity (25%), Consistency (20%), Uniqueness (20%), Timeliness (10%)
+    base_dimension_weights = {
         "Completeness": 0.2778,
         "Validity": 0.2778,
         "Uniqueness": 0.2222,
         "Consistency": 0.2222,
+        "Timeliness": 0.10,
     }
-    total_w = sum(dimension_weights.get(d, 1.0 / len(dim_scores)) for d in dim_scores)
-    overall_score = sum(
-        (dimension_weights.get(d, 1.0 / len(dim_scores)) / total_w) * dim_scores[d]
-        for d in dim_scores
-    )
+    total_w = sum(base_dimension_weights.get(d, 1.0 / len(dim_scores)) for d in dim_scores)
+    if total_w > 0:
+        overall_score = sum(
+            (base_dimension_weights.get(d, 1.0 / len(dim_scores)) / total_w) * dim_scores[d]
+            for d in dim_scores
+        )
+    else:
+        overall_score = sum(dim_scores.values()) / len(dim_scores) if dim_scores else 100.0
+
     overall_score = round(float(overall_score), 2)
 
     if overall_score >= 90 and critical_failures == 0:
