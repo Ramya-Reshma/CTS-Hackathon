@@ -45,20 +45,41 @@ export default function DataQualityPage() {
 
   // Authoritative dimension scores from the Data Quality Engine
   const dimScores = statistics?.dimension_scores || {}
-  const completeness = dimScores.Completeness ?? dimScores.completeness ?? 99.48
-  const validity = dimScores.Validity ?? dimScores.validity ?? 74.92
-  const uniqueness = dimScores.Uniqueness ?? dimScores.uniqueness ?? 100.0
-  const consistency = dimScores.Consistency ?? dimScores.consistency ?? 93.02
-  const timeliness = dimScores.Timeliness ?? dimScores.timeliness ?? 100.0
+  const completeness = Number(dimScores.Completeness ?? dimScores.completeness ?? 100.0)
+  const validity = Number(dimScores.Validity ?? dimScores.validity ?? 100.0)
+  const uniqueness = Number(dimScores.Uniqueness ?? dimScores.uniqueness ?? 100.0)
+  const consistency = Number(dimScores.Consistency ?? dimScores.consistency ?? 100.0)
+  const hasTimeliness = dimScores.Timeliness !== undefined || dimScores.timeliness !== undefined
+  const timeliness = Number(dimScores.Timeliness ?? dimScores.timeliness ?? 100.0)
 
   // Authoritative overall score from backend or computed using canonical engine weights
-  const weightedCalculated = (
-    0.2778 * completeness +
-    0.2778 * validity +
-    0.2222 * uniqueness +
-    0.2222 * consistency
-  )
-  const dqScore = statistics?.overall_data_quality_score ?? weightedCalculated
+  const computeDynamicOverallScore = () => {
+    if (statistics?.overall_data_quality_score != null) {
+      return Number(statistics.overall_data_quality_score)
+    }
+    const weights = {
+      Completeness: 0.2778,
+      Validity: 0.2778,
+      Uniqueness: 0.2222,
+      Consistency: 0.2222,
+      ...(hasTimeliness ? { Timeliness: 0.10 } : {}),
+    }
+    const activeDims = {
+      Completeness: completeness,
+      Validity: validity,
+      Uniqueness: uniqueness,
+      Consistency: consistency,
+      ...(hasTimeliness ? { Timeliness: timeliness } : {}),
+    }
+    const totalW = Object.keys(activeDims).reduce((sum, k) => sum + (weights[k] || 0.25), 0)
+    if (totalW <= 0) return 100.0
+    const score = Object.entries(activeDims).reduce((sum, [k, v]) => {
+      return sum + ((weights[k] || 0.25) / totalW) * v
+    }, 0)
+    return Number(score.toFixed(2))
+  }
+
+  const dqScore = computeDynamicOverallScore()
   const overallStatus = statistics?.overall_risk_level ? (
     statistics.overall_risk_level === 'LOW' ? 'PASS' : statistics.overall_risk_level === 'MEDIUM' ? 'WARNING' : 'FAIL'
   ) : (dqScore >= 80 ? 'PASS' : dqScore >= 60 ? 'WARNING' : 'FAIL')

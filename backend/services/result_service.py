@@ -69,8 +69,14 @@ def _load_synthesis_lookup(report_json_path: str) -> Dict[str, Dict[str, Any]]:
 
 def _load_quality_summary(report_json_path: str) -> Dict[str, Any]:
     """Load data-quality summary from the sibling quality report if it exists."""
-    report_dir = Path(report_json_path).resolve().parent
-    quality_path = report_dir / "quality_report.json"
+    path = Path(report_json_path).resolve()
+    if path.is_dir():
+        quality_path = path / "quality_report.json"
+    elif path.name == "quality_report.json":
+        quality_path = path
+    else:
+        quality_path = path.parent / "quality_report.json"
+
     if not quality_path.exists():
         return {}
 
@@ -86,8 +92,14 @@ def _load_quality_summary(report_json_path: str) -> Dict[str, Any]:
 
 def _load_sla_summary(report_json_path: str) -> Dict[str, Any]:
     """Load population SLA summary from the sibling sla_temporal_findings.json if it exists."""
-    report_dir = Path(report_json_path).resolve().parent
-    sla_path = report_dir / "sla_temporal_findings.json"
+    path = Path(report_json_path).resolve()
+    if path.is_dir():
+        sla_path = path / "sla_temporal_findings.json"
+    elif path.name == "sla_temporal_findings.json":
+        sla_path = path
+    else:
+        sla_path = path.parent / "sla_temporal_findings.json"
+
     if not sla_path.exists():
         return {}
 
@@ -652,8 +664,37 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
         run_dir = Path(__file__).resolve().parents[2] / "log"
 
     quality_summary = run.quality_summary or _load_quality_summary(str(run_dir / "quality_report.json"))
-    overall_quality_score = quality_summary.get("overall_quality_score")
-    overall_risk_level = quality_summary.get("overall_risk_level")
+    overall_quality_score = quality_summary.get("overall_quality_score") if isinstance(quality_summary, dict) else None
+    overall_risk_level = quality_summary.get("overall_risk_level") if isinstance(quality_summary, dict) else None
+
+    # Authoritative weighted calculation fallback if overall_quality_score is None but dimension_scores is available
+    if overall_quality_score is None and quality_summary and isinstance(quality_summary, dict) and "dimension_scores" in quality_summary:
+        dim_scores = quality_summary["dimension_scores"]
+        base_dimension_weights = {
+            "Completeness": 0.2778,
+            "Validity": 0.2778,
+            "Uniqueness": 0.2222,
+            "Consistency": 0.2222,
+            "Timeliness": 0.10,
+        }
+        total_w = sum(base_dimension_weights.get(d, 1.0 / len(dim_scores)) for d in dim_scores)
+        if total_w > 0:
+            overall_quality_score = sum(
+                (base_dimension_weights.get(d, 1.0 / len(dim_scores)) / total_w) * float(dim_scores[d])
+                for d in dim_scores
+            )
+            overall_quality_score = round(float(overall_quality_score), 2)
+
+    if overall_risk_level is None and overall_quality_score is not None:
+        crit_count = quality_summary.get("critical_issue_count", 0) if isinstance(quality_summary, dict) else 0
+        if overall_quality_score >= 90 and crit_count == 0:
+            overall_risk_level = "LOW"
+        elif overall_quality_score >= 75:
+            overall_risk_level = "MEDIUM"
+        elif overall_quality_score >= 50:
+            overall_risk_level = "HIGH"
+        else:
+            overall_risk_level = "CRITICAL"
 
     # Authoritative population SLA summary loaded for this specific run
     raw_sla_summary = run.sla_summary or _load_sla_summary(str(run_dir / "sla_temporal_findings.json"))

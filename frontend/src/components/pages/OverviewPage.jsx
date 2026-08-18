@@ -36,7 +36,13 @@ export default function OverviewPage({ onNavigateToUploads }) {
   const sev = currentRun?.severity_summary || statistics?.by_severity || {}
   const totalAnomalies = currentRun?.total_anomalies ?? statistics?.total_anomalies ?? anomalies.length
   const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? 0
-  const dqScore = statistics?.overall_data_quality_score ?? 88.8
+  const dqScore = statistics?.overall_data_quality_score != null ? Number(statistics.overall_data_quality_score) : 100.0
+  const dimScores = statistics?.dimension_scores || {}
+  const compVal = dimScores.Completeness ?? dimScores.completeness
+  const validVal = dimScores.Validity ?? dimScores.validity
+  const dqSubText = compVal != null && validVal != null
+    ? `Completeness ${Number(compVal).toFixed(1)}% · Validity ${Number(validVal).toFixed(1)}%`
+    : 'Evaluated across quality dimensions'
   const slaSummary = statistics?.sla_summary || null
   const notAssessableCount = slaSummary?.records_not_assessable ?? slaSummary?.not_assessable ?? 0
   const slaAssessable = slaSummary?.records_assessable ?? (totalRecords - notAssessableCount)
@@ -194,7 +200,7 @@ export default function OverviewPage({ onNavigateToUploads }) {
           </div>
           <div className="ml-kpi-value success-text">{fmtNum(dqScore, 1)}%</div>
           <div className="ml-kpi-sub">
-            Completeness 94.2% · Validity 91.5%
+            {dqSubText}
           </div>
           <div className="ml-kpi-bar-bg">
             <div className="ml-kpi-bar-fill fill-green" style={{ width: `${dqScore}%` }} />
