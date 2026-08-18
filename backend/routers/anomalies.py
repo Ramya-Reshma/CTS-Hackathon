@@ -180,8 +180,15 @@ def get_run_integrity(run_id: str, db: Session = Depends(get_db)):
         if not run:
             raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
 
+        from pathlib import Path
         from services.processing_integrity import compute_processing_integrity
-        integrity = compute_processing_integrity()
+
+        run_dir = Path(run.report_dir) if run.report_dir else (Path(__file__).resolve().parents[2] / "log" / "runs" / run_id)
+        report_file_path = str(run_dir / "final_anomaly_report.json")
+        if not Path(report_file_path).exists():
+            report_file_path = str(Path(__file__).resolve().parents[2] / "log" / "final_anomaly_report.json")
+
+        integrity = compute_processing_integrity(report_file_path)
 
         return {
             "run_id": run_id,
