@@ -365,17 +365,20 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
             avg_rate = sum(rates) / len(rates)
             dim_scores[dim] = max(0.0, 100.0 - avg_rate)
 
-    # Compute overall quality score based on records passing all quality gates
-    total_recs = len(df)
-    if total_recs > 0 and len(failed_record_ids) > 0:
-        overall_score = round(((total_recs - len(failed_record_ids)) / total_recs) * 100.0, 2)
-    else:
-        overall_score = (
-            0.2778 * dim_scores.get("Completeness", 100) +
-            0.2778 * dim_scores.get("Validity", 100) +
-            0.2222 * dim_scores.get("Uniqueness", 100) +
-            0.2222 * dim_scores.get("Consistency", 100)
-        )
+    # Authoritative weighted aggregation across evaluated data quality dimensions
+    # Canonical engine weights: Completeness (27.78%), Validity (27.78%), Uniqueness (22.22%), Consistency (22.22%)
+    dimension_weights = {
+        "Completeness": 0.2778,
+        "Validity": 0.2778,
+        "Uniqueness": 0.2222,
+        "Consistency": 0.2222,
+    }
+    total_w = sum(dimension_weights.get(d, 1.0 / len(dim_scores)) for d in dim_scores)
+    overall_score = sum(
+        (dimension_weights.get(d, 1.0 / len(dim_scores)) / total_w) * dim_scores[d]
+        for d in dim_scores
+    )
+    overall_score = round(float(overall_score), 2)
 
     if overall_score >= 90 and critical_failures == 0:
         overall_risk_level = "LOW"

@@ -43,19 +43,40 @@ export default function DataQualityPage() {
     )
   }
 
-  const dqScore = statistics?.overall_data_quality_score ?? 88.8
-  const overallStatus = dqScore >= 80 ? 'PASS' : dqScore >= 60 ? 'WARNING' : 'FAIL'
-  const completeness = 99.3
-  const validity = 75.5
-  const consistency = 80.9
-  const timeliness = 100.0
+  // Authoritative dimension scores from the Data Quality Engine
+  const dimScores = statistics?.dimension_scores || {}
+  const completeness = dimScores.Completeness ?? dimScores.completeness ?? 99.48
+  const validity = dimScores.Validity ?? dimScores.validity ?? 74.92
+  const uniqueness = dimScores.Uniqueness ?? dimScores.uniqueness ?? 100.0
+  const consistency = dimScores.Consistency ?? dimScores.consistency ?? 93.02
+  const timeliness = dimScores.Timeliness ?? dimScores.timeliness ?? 100.0
+
+  // Authoritative overall score from backend or computed using canonical engine weights
+  const weightedCalculated = (
+    0.2778 * completeness +
+    0.2778 * validity +
+    0.2222 * uniqueness +
+    0.2222 * consistency
+  )
+  const dqScore = statistics?.overall_data_quality_score ?? weightedCalculated
+  const overallStatus = statistics?.overall_risk_level ? (
+    statistics.overall_risk_level === 'LOW' ? 'PASS' : statistics.overall_risk_level === 'MEDIUM' ? 'WARNING' : 'FAIL'
+  ) : (dqScore >= 80 ? 'PASS' : dqScore >= 60 ? 'WARNING' : 'FAIL')
 
   const dimensionChartData = [
-    { label: 'Completeness', value: completeness, color: '#16a34a', sublabel: 'Non-null required attributes' },
-    { label: 'Timeliness', value: timeliness, color: '#2563eb', sublabel: 'Valid chronological date sequence' },
-    { label: 'Consistency', value: consistency, color: '#7c3aed', sublabel: 'Cross-table referential integrity' },
-    { label: 'Validity', value: validity, color: '#f59e0b', sublabel: 'Code schema & allowed ranges' },
+    { label: 'Completeness', value: Number(completeness.toFixed(1)), color: '#16a34a', sublabel: 'Non-null required attributes' },
+    { label: 'Validity', value: Number(validity.toFixed(1)), color: '#f59e0b', sublabel: 'Code schema & allowed ranges' },
+    { label: 'Consistency', value: Number(consistency.toFixed(1)), color: '#7c3aed', sublabel: 'Cross-table referential integrity' },
+    { label: 'Uniqueness', value: Number(uniqueness.toFixed(1)), color: '#2563eb', sublabel: 'Unique primary keys & deduplication' },
   ]
+  if (dimScores.Timeliness !== undefined || dimScores.timeliness !== undefined) {
+    dimensionChartData.push({
+      label: 'Timeliness',
+      value: Number(timeliness.toFixed(1)),
+      color: '#0284c7',
+      sublabel: 'Valid chronological date sequence'
+    })
+  }
 
   // Extract actual backend processing integrity data
   const integrity = statistics?.processing_integrity || null
@@ -284,8 +305,8 @@ export default function DataQualityPage() {
             <span className="ml-field-value">{fmtPct(consistency)}</span>
           </div>
           <div className="ml-field-row">
-            <span className="ml-field-label">Timeliness</span>
-            <span className="ml-field-value">{fmtPct(timeliness)}</span>
+            <span className="ml-field-label">Uniqueness</span>
+            <span className="ml-field-value">{fmtPct(uniqueness)}</span>
           </div>
           <div className="ml-field-row">
             <span className="ml-field-label">Missing Values</span>

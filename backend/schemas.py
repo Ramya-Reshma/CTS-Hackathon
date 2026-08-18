@@ -158,4 +158,9 @@ class RunStatistics(BaseModel):
     average_confidence: Optional[float] = None
     overall_data_quality_score: Optional[float] = None
     overall_risk_level: Optional[str] = None
+    dimension_scores: Optional[Dict[str, float]] = None
+    all_rule_results: Optional[List[Dict[str, Any]]] = None
+    top_failed_rules: Optional[List[Dict[str, Any]]] = None
+    critical_issue_count: Optional[int] = None
+    processing_integrity: Optional[Dict[str, Any]] = None
     sla_summary: Optional[Dict[str, Any]] = None

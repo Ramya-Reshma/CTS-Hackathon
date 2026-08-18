@@ -726,6 +726,17 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
         response["overall_data_quality_score"] = round(float(overall_quality_score), 2)
     if overall_risk_level is not None:
         response["overall_risk_level"] = overall_risk_level
+    if quality_summary and isinstance(quality_summary, dict):
+        if "dimension_scores" in quality_summary:
+            response["dimension_scores"] = {
+                k: round(float(v), 2) for k, v in quality_summary["dimension_scores"].items()
+            }
+        if "all_rule_results" in quality_summary:
+            response["all_rule_results"] = quality_summary["all_rule_results"]
+        if "top_failed_rules" in quality_summary:
+            response["top_failed_rules"] = quality_summary["top_failed_rules"]
+        if "critical_issue_count" in quality_summary:
+            response["critical_issue_count"] = quality_summary["critical_issue_count"]
     if sla_summary:
         response["sla_summary"] = sla_summary
     if integrity_data:
