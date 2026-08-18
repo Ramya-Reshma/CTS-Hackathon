@@ -17,13 +17,20 @@ import data_quality as dq
 import sla_temporal_monitoring as sla_mon
 
 
-def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
+def run_pipeline(
+    input_file: str,
+    output_dir: str | None = None,
+    run_id: str | None = None,
+    dataset_id: str | None = None,
+) -> str:
     """
-    Run the complete ML anomaly detection pipeline.
+    Run the complete ML anomaly detection pipeline on ONLY the uploaded dataset.
     
     Args:
         input_file: Path to input CSV or Excel file
         output_dir: Optional custom output directory (defaults to log/)
+        run_id: Optional Run ID (e.g. RUN-YYYYMMDD-XXXX)
+        dataset_id: Optional Dataset ID (e.g. DS-YYYYMMDD-XXXX)
     
     Returns:
         Path to the generated final_anomaly_report.json
@@ -37,7 +44,7 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
     input_path = Path(input_file)
     
     if not input_path.exists():
-        raise FileNotFoundError(f"Input file not found: {input_file}")
+        raise FileNotFoundError(f"Uploaded dataset is not available for this run: {input_file}")
     
     if output_dir is None:
         output_dir = str(repo_root / "log")
@@ -45,47 +52,68 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
-    # Load the input dataset (support CSV and Excel)
+    # Load ONLY the uploaded dataset (support CSV and Excel)
     try:
         if str(input_path).lower().endswith(('.xls', '.xlsx')):
             df = pd.read_excel(input_path)
         else:
             df = pd.read_csv(input_path)
     except Exception as e:
-        raise Exception(f"Error reading {input_file}: {e}")
+        raise Exception(f"Error reading uploaded dataset {input_file}: {e}")
 
-    # 1. Feature Engineering
-    # This prepares the data (e.g. creating Provider_NPI_Frequency, missing checks, etc.)
+    input_rows = len(df)
+    r_id = run_id or "RUN-DEFAULT"
+    d_id = dataset_id or "DS-DEFAULT"
+
+    print("\n" + "=" * 60)
+    print(f"[PIPELINE]")
+    print(f"Run ID: {r_id}")
+    print(f"Dataset ID: {d_id}")
+    print(f"Filename: {input_path.name}")
+    print(f"Input rows: {input_rows}")
+    print("=" * 60)
+
+    # 1. Feature Engineering (Only on uploaded df)
     df = fe.run_feature_engineering(df)
+    if len(df) != input_rows:
+        print(f"[ERROR] Row count changed in Feature Engineering: {len(df)} != {input_rows}")
+    print(f"[FEATURE ENGINEERING] rows={len(df)}")
 
     # 2. Statistical Detection (Z-score + IQR)
     df = sd.run_statistical_detection(df)
+    if len(df) != input_rows:
+        print(f"[ERROR] Row count changed in Statistical Detection: {len(df)} != {input_rows}")
 
     # 3. Isolation Forest (Machine Learning Anomaly Detection)
-    # Computes ISO_Is_Anomaly, ISO_Raw_Score, ISO_Severity_0to1
     df = isf.run_isolation_forest(df)
+    if len(df) != input_rows:
+        print(f"[ERROR] Row count changed in Isolation Forest: {len(df)} != {input_rows}")
 
     # 4. Correlation Analysis
-    # Computes Correlation_Anomaly and Quantity_Supply_Anomaly
     df = ca.run_correlation_analysis(df)
+    if len(df) != input_rows:
+        print(f"[ERROR] Row count changed in Correlation Analysis: {len(df)} != {input_rows}")
+    print(f"[ANOMALY DETECTION] rows={len(df)}")
 
-    # 5. Data Quality checks (profiles, rule engine, scoring)
+    # 5. Data Quality checks (Only on uploaded df)
     try:
         profile = dq.generate_profile(df, output_path=str(output_path / "data_profile.json"))
         rule_results = dq.run_quality_checks(df, dq.RULES)
         quality_report = dq.calculate_scores_and_risk(rule_results, df, output_dir=str(output_path))
+        print(f"[DATA QUALITY] rows={len(df)}")
     except Exception as e:
         import traceback
         print("Data quality step failed:")
         traceback.print_exc()
 
-    # 6. SLA / Temporal Monitoring (run after Data Quality)
+    # 6. SLA / Temporal Monitoring (Only on uploaded df)
     sla_output = None
     try:
         sla_output = sla_mon.run_sla_monitoring(
             df,
             config_overrides={"output_dir": str(output_path)},
         )
+        print(f"[SLA ENGINE] rows={len(df)}")
     except Exception as e:
         import traceback
         print("SLA / Temporal Monitoring step failed:")
@@ -183,11 +211,12 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
         }
         results.append(result)
     
-    # Write to a JSON file under `log/final_anomaly_report.json` (required by RCA agent)
+    # Write to a JSON file under `output_path / final_anomaly_report.json`
     report_file = output_path / "final_anomaly_report.json"
     with open(report_file, "w") as f:
         json.dump(results, f, indent=2)
 
+    print(f"[RECOMMENDATION ENGINE] rows={len(results)}")
     print(f"\nML Pipeline complete! Output written to {report_file}")
     print(f"Total Records processed: {len(results)}")
     
