@@ -100,7 +100,7 @@ def main():
     # Save final analysis report
     final_output = {
         "analyses": analyses
-    } if len(analyses) > 1 else (analyses[0] if len(analyses) == 1 else {"analyses": []})
+    }
     
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(final_output, f, indent=2)

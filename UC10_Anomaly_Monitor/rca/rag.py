@@ -137,16 +137,29 @@ def generate_rag_recommendation(
     likely_root_cause = "Insufficient evidence to determine root cause."
     actions = []
 
+    seen_causes = set()
+    seen_actions = set()
+
     if similar:
-        for s in similar[:3]:
-            if s.get("Root_Cause"):
-                possible_causes.append(f"Domain precedent ({s.get('Anomaly_Name', 'Pattern')}): {s['Root_Cause']}")
-            if s.get("Recommended_Fix"):
-                actions.append(s["Recommended_Fix"])
+        for s in similar:
+            rc = str(s.get("Root_Cause", "")).strip()
+            name = str(s.get("Anomaly_Name") or s.get("Anomaly_Type") or "Pattern").strip()
+            fix = str(s.get("Recommended_Fix", "")).strip()
+
+            if rc and rc not in seen_causes:
+                seen_causes.add(rc)
+                possible_causes.append(f"Domain precedent ({name}): {rc}")
+
+            if fix and fix not in seen_actions:
+                seen_actions.add(fix)
+                actions.append(fix)
+
+            if len(possible_causes) >= 3 and len(actions) >= 3:
+                break
         
-        # Grounding check: Only attribute likely root cause if pattern strictly matches
+        # Grounding check: Set top likely root cause from strongest matching domain precedent
         top_match = similar[0]
-        if top_match.get("similarity", 0) >= 0.75 and top_match.get("Root_Cause"):
+        if top_match.get("Root_Cause"):
             likely_root_cause = top_match["Root_Cause"]
 
     if not possible_causes:

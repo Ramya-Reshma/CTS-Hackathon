@@ -147,13 +147,27 @@ def build_evidence(record_id: str, report_path: Optional[str] = None) -> Dict[st
         "ml_signal_count": ml_signal_count
     }
 
-    # Pass additional contextual fields if present in source (e.g. status, denial_reason)
+    # Pass additional contextual fields if present in source (e.g. status, denial_reason, codes)
     if rec.get("Status"):
         evidence["status"] = rec.get("Status")
     if rec.get("Denial_Reason_Code"):
         evidence["denial_reason_code"] = rec.get("Denial_Reason_Code")
+    if rec.get("Diagnosis_Code"):
+        evidence["diagnosis_code"] = rec.get("Diagnosis_Code")
+    if rec.get("Procedure_Code"):
+        evidence["procedure_code"] = rec.get("Procedure_Code")
+    if rec.get("Drug_Name"):
+        evidence["drug_name"] = rec.get("Drug_Name")
+    if rec.get("NDC_Code"):
+        evidence["ndc_code"] = rec.get("NDC_Code")
+    if rec.get("Processing_Latency_Days") is not None:
+        evidence["processing_latency_days"] = rec.get("Processing_Latency_Days")
+    if rec.get("Provider_State"):
+        evidence["provider_state"] = rec.get("Provider_State")
     if rec.get("Auth_Required_Flag") is not None:
         evidence["auth_required_flag"] = rec.get("Auth_Required_Flag")
+    if rec.get("Missing_Required_Auth_Link") is not None:
+        evidence["missing_required_auth_link"] = rec.get("Missing_Required_Auth_Link")
     if rec.get("anomaly_type"):
         evidence["anomaly_type"] = rec.get("anomaly_type")
     if rec.get("primary_signal"):

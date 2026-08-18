@@ -114,7 +114,7 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
     consolidated_path.write_text(json.dumps(consolidated, indent=2), encoding="utf-8")
 
     final_analysis_path = output_dir / "final_analysis_report.json"
-    final_output = {"analyses": consolidated} if len(consolidated) > 1 else (consolidated[0] if len(consolidated) == 1 else {"analyses": []})
+    final_output = {"analyses": consolidated}
     final_analysis_path.write_text(json.dumps(final_output, indent=2), encoding="utf-8")
 
     logger.info(

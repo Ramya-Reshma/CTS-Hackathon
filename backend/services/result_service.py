@@ -239,6 +239,18 @@ def _extract_rca_payload(record_id: str, report_json_path: str) -> Dict[str, Any
         except Exception as e:
             logger.warning(f"[DB] Failed to parse {consolidated_path.name}: {e}")
 
+    final_analysis_path = report_dir / "final_analysis_report.json"
+    if final_analysis_path.exists():
+        try:
+            payload = json.loads(final_analysis_path.read_text(encoding="utf-8"))
+            items = payload.get("analyses", []) if isinstance(payload, dict) else payload
+            if isinstance(items, list):
+                for item in items:
+                    if str(item.get("record_id", "")).upper() == str(record_id).upper():
+                        return item
+        except Exception as e:
+            logger.warning(f"[DB] Failed to parse {final_analysis_path.name}: {e}")
+
     return {}
 
 
@@ -667,26 +679,39 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     overall_quality_score = quality_summary.get("overall_quality_score") if isinstance(quality_summary, dict) else None
     overall_risk_level = quality_summary.get("overall_risk_level") if isinstance(quality_summary, dict) else None
 
-    # Authoritative weighted calculation fallback if overall_quality_score is None but dimension_scores is available
-    if overall_quality_score is None and quality_summary and isinstance(quality_summary, dict) and "dimension_scores" in quality_summary:
+    # Compute authoritative weighted overall score directly from dimension_scores
+    if quality_summary and isinstance(quality_summary, dict) and "dimension_scores" in quality_summary:
         dim_scores = quality_summary["dimension_scores"]
+
+        # Ensure Timeliness dimension is represented
+        if "Timeliness" not in dim_scores and "timeliness" not in dim_scores:
+            time_rules = [
+                r for r in quality_summary.get("all_rule_results", [])
+                if r.get("dimension") == "Timeliness" or r.get("rule_id") in ("R015", "R016")
+            ]
+            if time_rules:
+                avg_time_fail = sum(r.get("failure_rate_pct", 0.0) for r in time_rules) / len(time_rules)
+                dim_scores["Timeliness"] = round(max(0.0, 100.0 - avg_time_fail), 2)
+            else:
+                dim_scores["Timeliness"] = 100.0
+
         base_dimension_weights = {
-            "Completeness": 0.2778,
-            "Validity": 0.2778,
-            "Uniqueness": 0.2222,
-            "Consistency": 0.2222,
+            "Completeness": 0.25,
+            "Validity": 0.25,
+            "Consistency": 0.20,
+            "Uniqueness": 0.20,
             "Timeliness": 0.10,
         }
-        total_w = sum(base_dimension_weights.get(d, 1.0 / len(dim_scores)) for d in dim_scores)
+        total_w = sum(base_dimension_weights.get(d, 0.20) for d in dim_scores)
         if total_w > 0:
             overall_quality_score = sum(
-                (base_dimension_weights.get(d, 1.0 / len(dim_scores)) / total_w) * float(dim_scores[d])
+                (base_dimension_weights.get(d, 0.20) / total_w) * float(dim_scores[d])
                 for d in dim_scores
             )
             overall_quality_score = round(float(overall_quality_score), 2)
 
-    if overall_risk_level is None and overall_quality_score is not None:
-        crit_count = quality_summary.get("critical_issue_count", 0) if isinstance(quality_summary, dict) else 0
+    crit_count = quality_summary.get("critical_issue_count", 0) if isinstance(quality_summary, dict) else 0
+    if overall_quality_score is not None:
         if overall_quality_score >= 90 and crit_count == 0:
             overall_risk_level = "LOW"
         elif overall_quality_score >= 75:

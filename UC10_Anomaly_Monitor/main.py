@@ -42,7 +42,7 @@ def main():
     # 2. Save final_analysis_report.json (standard artifact)
     final_file = log_dir / "final_analysis_report.json"
     with open(final_file, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
+        json.dump({"analyses": [result]}, f, indent=2)
 
     print("\n" + "="*60)
     print("FINAL RCA ANALYSIS RESULT:")

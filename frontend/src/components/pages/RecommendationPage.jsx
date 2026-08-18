@@ -4,7 +4,6 @@ import {
   getAnomalyDetail,
   evaluateAutoResolution,
   executeAutoResolution,
-  getAutoResolutionHistory,
 } from '../../services/api'
 import { fmtLabel, fmtNum } from '../../utils/statusUtils'
 import { exportRecommendationReportPDF } from '../../utils/pdfExport'
@@ -41,10 +40,7 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
   const [evalLoading, setEvalLoading] = useState(false)
   const [execLoading, setExecLoading] = useState(false)
   const [execResult, setExecResult] = useState(null)
-  const [history, setHistory] = useState([])
-  const [historyLoading, setHistoryLoading] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
   const [showEvidence, setShowEvidence] = useState(false)
   const [error, setError] = useState(null)
 
@@ -143,16 +139,6 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRecord?.record_id, runId])
 
-  /* Load history */
-  const loadHistory = () => {
-    if (!runId) return
-    setHistoryLoading(true)
-    getAutoResolutionHistory(runId)
-      .then(data => setHistory(data))
-      .catch(() => setHistory([]))
-      .finally(() => setHistoryLoading(false))
-  }
-
   /* Execute fix — uses evaluation result directly (no need to rebuild payload) */
   const handleApplyFix = async () => {
     if (!evaluation) return
@@ -176,7 +162,6 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
         },
       })
       setExecResult(result)
-      loadHistory()
     } catch (err) {
       setError('Execution failed: ' + err.message)
     } finally {
@@ -253,34 +238,14 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
         <div className="ares-body">
           {/* Decision Summary */}
           <div className="ares-decision-card">
-            {/* Multi-Signal Telemetry Bar */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>
-              <span className={`ares-pill ${(full.ML_Is_Anomalous || full.ISO_Is_Anomaly || selectedRecord?.anomaly_type !== 'Normal') ? 'ares-pill-rollback' : 'ares-pill-yes'}`}>
-                ML: {(full.ML_Is_Anomalous || full.ISO_Is_Anomaly || selectedRecord?.anomaly_type !== 'Normal') ? 'ANOMALY' : 'NORMAL'}
-              </span>
-              <span className={`ares-pill ${full.SLA_Status === 'BREACHED' ? 'ares-pill-no' : 'ares-pill-yes'}`}>
-                SLA: {full.SLA_Status || 'ON TRACK'}
-              </span>
-              <span className={`ares-pill ${(full.Provider_NPI && full.BENE_ID) ? 'ares-pill-yes' : 'ares-pill-no'}`}>
-                DQ: {(full.Provider_NPI && full.BENE_ID) ? 'PASS' : 'DEFECT'}
-              </span>
-              {full.Correlation_Anomaly && (
-                <span className="ares-pill ares-pill-warn">CORRELATION BREAK</span>
-              )}
-            </div>
-
             <div className="ares-decision-meta">
               <div className="ares-meta-row">
-                <span className="ares-meta-label">Issue ID</span>
-                <code className="ares-code">{evaluation.issue_id}</code>
+                <span className="ares-meta-label">Record ID</span>
+                <code className="ares-code">{selectedRecord?.record_id || evaluation.record_id}</code>
               </div>
               <div className="ares-meta-row">
-                <span className="ares-meta-label">Layer</span>
-                <span className="ares-meta-value">{evaluation.layer?.replace(/_/g, ' ')}</span>
-              </div>
-              <div className="ares-meta-row">
-                <span className="ares-meta-label">Issue Type</span>
-                <span className="ares-meta-value">{evaluation.issue_type?.replace(/_/g, ' ')}</span>
+                <span className="ares-meta-label">Anomaly Type</span>
+                <span className="ares-meta-value">{selectedRecord?.anomaly_type || evaluation.anomaly_type || 'Multivariate Anomaly'}</span>
               </div>
               <div className="ares-meta-row">
                 <span className="ares-meta-label">Proposed Action</span>
@@ -408,7 +373,6 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
                 <div className="ares-confirm-body">
                   <div><strong>Record:</strong> {evaluation.record_id}</div>
                   <div><strong>Action:</strong> <code>{evaluation.proposed_action}</code></div>
-                  <div><strong>Layer:</strong> {evaluation.layer?.replace(/_/g, ' ')}</div>
                   <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--gray-500)' }}>
                     A pre-fix snapshot will be taken. If post-fix validation fails, the change will be automatically rolled back.
                   </div>
@@ -444,77 +408,12 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
                 ↺ Re-Evaluate
               </button>
             )}
-            <button
-              className="ares-btn-outline"
-              onClick={() => { setShowHistory(v => !v); if (!showHistory) loadHistory() }}
-            >
-              {showHistory ? 'Hide' : 'View'} Audit History
-            </button>
           </div>
         </div>
       )}
-
-      {/* Auto-Resolution Audit History Table */}
-      {showHistory && (
-        <div className="ares-history">
-          <div className="ares-history-header">
-            <h3>Auto-Resolution Audit History</h3>
-            <button className="ares-btn-outline" style={{ fontSize: '11px', padding: '4px 12px' }} onClick={loadHistory}>
-              ↺ Refresh
-            </button>
-          </div>
-          {historyLoading ? (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px' }}>
-              <div className="spinner" />
-              <span style={{ fontSize: '12px', color: 'var(--gray-500)' }}>Loading history…</span>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="ares-empty">No remediations recorded yet.</div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ares-history-table">
-                <thead>
-                  <tr>
-                    <th>Fix ID</th>
-                    <th>Record</th>
-                    <th>Layer</th>
-                    <th>Action</th>
-                    <th>Status</th>
-                    <th>Validation</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map(h => {
-                    const sb = statusBadge(h.status)
-                    return (
-                      <tr key={h.fix_id}>
-                        <td><code style={{ fontSize: '10px' }}>{h.fix_id?.slice(-14)}</code></td>
-                        <td><code style={{ fontSize: '11px' }}>{h.record_id}</code></td>
-                        <td style={{ fontSize: '11px' }}>{h.layer?.replace(/_/g, ' ')}</td>
-                        <td><code style={{ fontSize: '10px' }}>{h.action_id}</code></td>
-                        <td>
-                          <span className={`ares-pill ${h.status === 'AUTO_FIXED' ? 'ares-pill-yes' : h.status === 'FIX_FAILED_ROLLED_BACK' ? 'ares-pill-rollback' : 'ares-pill-warn'}`}>
-                            {sb.icon} {sb.label}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`ares-pill ${h.validation_status === 'PASS' ? 'ares-pill-yes' : 'ares-pill-no'}`}>
-                            {h.validation_status}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: '11px', color: 'var(--gray-400)' }}>
-                          {h.created_at ? new Date(h.created_at).toLocaleTimeString() : '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+    </div>
+  )
+}
     </div>
   )
 }
@@ -738,57 +637,22 @@ export default function RecommendationPage() {
               </div>
 
               {/* Monitoring Context */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.8px' }}>Monitoring Context</div>
-                  <button onClick={() => setShowMonitoringDetails(o => !o)} style={{ background: 'none', border: 'none', color: 'var(--navy-500)', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
-                    {showMonitoringDetails ? '▲ Hide Details' : '▼ View Details'}
-                  </button>
-                </div>
-                <div className="ml-summary-trio">
-                  <div className="ml-summary-card anomaly" style={{ padding: '12px 16px' }}>
-                    <span className="ml-summary-card-label">Anomaly Status</span>
-                    <div style={{ marginTop: '4px' }}>
-                      <span className={`ml-status-badge ${isAnomalous ? 'ml-status-anomalous' : 'ml-status-normal'}`}>
-                        {isAnomalous ? 'ANOMALOUS' : 'NORMAL'}
-                      </span>
-                    </div>
+              {/* Anomaly Model & Primary Signal Context */}
+              <div className="ml-info-card" style={{ padding: '14px 20px' }}>
+                <div className="ml-field-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+                  <div className="ml-field-row">
+                    <span className="ml-field-label">ANOMALY MODEL</span>
+                    <span className="ml-field-value" style={{ fontWeight: 600, color: 'var(--navy-900)' }}>
+                      Isolation Forest + Correlation Residual Analysis
+                    </span>
                   </div>
-                  <div className="ml-summary-card sla" style={{ padding: '12px 16px' }}>
-                    <span className="ml-summary-card-label">SLA Risk</span>
-                    <div style={{ marginTop: '4px' }}>
-                      <span className={`ml-status-badge ${slaStatus === 'BREACHED' ? 'ml-status-breached' : slaStatus === 'AT_RISK' ? 'ml-status-at-risk' : 'ml-status-on-track'}`}>
-                        {slaStatus}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-summary-card quality" style={{ padding: '12px 16px' }}>
-                    <span className="ml-summary-card-label">Data Quality</span>
-                    <div style={{ marginTop: '4px' }}>
-                      <span className={`ml-status-badge ${dqStatus === 'PASS' ? 'ml-status-pass' : 'ml-status-warning'}`}>
-                        {dqStatus}
-                      </span>
-                    </div>
+                  <div className="ml-field-row">
+                    <span className="ml-field-label">PRIMARY SIGNAL</span>
+                    <span className="ml-field-value" style={{ fontWeight: 600, color: 'var(--navy-900)' }}>
+                      {selectedRecord.primary_signal || 'Isolation Forest'}
+                    </span>
                   </div>
                 </div>
-                {showMonitoringDetails && (
-                  <div className="ml-info-card" style={{ marginTop: '10px' }}>
-                    <div className="ml-field-grid">
-                      <div className="ml-field-row">
-                        <span className="ml-field-label">Anomaly Model</span>
-                        <span className="ml-field-value">Isolation Forest + Correlation Residual Analysis</span>
-                      </div>
-                      <div className="ml-field-row">
-                        <span className="ml-field-label">Primary Signal</span>
-                        <span className="ml-field-value">{selectedRecord.primary_signal || 'No anomalous signal'}</span>
-                      </div>
-                      <div className="ml-field-row">
-                        <span className="ml-field-label">SLA Target</span>
-                        <span className="ml-field-value">{full.sla_target_days ? `${full.sla_target_days} Days` : '2.0 Days'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* AUTO-RESOLUTION PANEL */}

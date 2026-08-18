@@ -147,7 +147,7 @@ def run_full_pipeline(input_excel_path: str = "Data/claims_pharmacy_auth_monitor
     final_analysis_path = output_dir / "final_analysis_report.json"
     consolidated_path = output_dir / "rca_consolidated_report.json"
     
-    final_output = {"analyses": analyses} if len(analyses) > 1 else (analyses[0] if len(analyses) == 1 else {"analyses": []})
+    final_output = {"analyses": analyses}
     with open(final_analysis_path, "w", encoding="utf-8") as f_final:
         json.dump(final_output, f_final, indent=2)
     with open(consolidated_path, "w", encoding="utf-8") as f_cons:

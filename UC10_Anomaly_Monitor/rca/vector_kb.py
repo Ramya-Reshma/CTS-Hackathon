@@ -241,6 +241,9 @@ class ChromaCaseKB:
         iso = record.get("isolation_forest", {})
         corr = record.get("correlation", {})
         stat = record.get("statistical", {})
+        fin = record.get("financials", {})
+        sup = record.get("supply", {})
+        dq = record.get("data_quality", [])
         
         iso_flag = iso.get("is_anomaly", record.get("ISO_Is_Anomaly", False))
         iso_score = iso.get("raw_score", record.get("ISO_Raw_Score"))
@@ -252,24 +255,47 @@ class ChromaCaseKB:
 
         status = record.get("status") or ""
         denial = record.get("denial_reason_code") or ""
+        diag = record.get("diagnosis_code") or ""
+        proc = record.get("procedure_code") or ""
+        drug = record.get("drug_name") or ""
+        ndc = record.get("ndc_code") or ""
+        latency = record.get("processing_latency_days")
 
         query_parts = [
             f"Record Type: {rec_type}",
-            f"Anomaly Type: {anom_type}",
-            f"Primary Signal: {primary_sig}",
         ]
+        if anom_type:
+            query_parts.append(f"Anomaly Type: {anom_type}")
+        if primary_sig:
+            query_parts.append(f"Primary Signal: {primary_sig}")
+        if diag:
+            query_parts.append(f"Diagnosis: {diag}")
+        if proc:
+            query_parts.append(f"Procedure: {proc}")
+        if drug:
+            query_parts.append(f"Drug Name: {drug}")
+        if ndc:
+            query_parts.append(f"NDC: {ndc}")
         if status:
             query_parts.append(f"Status: {status}")
         if denial:
             query_parts.append(f"Denial Reason: {denial}")
+        if latency is not None:
+            query_parts.append(f"Processing Latency: {latency} days")
+        if fin.get("billed") is not None:
+            query_parts.append(f"Billed: ${fin.get('billed')} Paid: ${fin.get('paid')} Allowed: ${fin.get('allowed')}")
+        if sup.get("quantity_dispensed") is not None or sup.get("days_supply") is not None:
+            query_parts.append(f"Quantity: {sup.get('quantity_dispensed')} Days Supply: {sup.get('days_supply')}")
         if iso_flag:
-            query_parts.append(f"Isolation Forest Anomaly score {iso_score}")
-        if corr_flag:
-            query_parts.append(f"Correlation Breakdown Paid vs Allowed residual {corr_res}")
-        if qs_flag:
+            query_parts.append(f"Isolation Forest score {iso_score}")
+        if corr_flag or (corr_res is not None and abs(float(corr_res)) > 0.1):
+            query_parts.append(f"Correlation residual Paid vs Allowed {corr_res}")
+        if qs_flag or (qs_res is not None and abs(float(qs_res)) > 0.1):
             query_parts.append(f"Quantity vs Days Supply residual {qs_res}")
         if affected:
             query_parts.append(f"Statistical outliers in {affected}")
+        if dq:
+            query_parts.append(f"Data Quality issues: {dq}")
 
         return " | ".join(query_parts)
 

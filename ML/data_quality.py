@@ -171,12 +171,12 @@ RULES = [
      "description": "Service_End_Date must be on or after Service_Date.",
      "recommended_fix": "Fix date entry errors where end date precedes start date."},
 
-    {"rule_id": "R015", "rule_name": "Submission vs Service Date Consistency", "dimension": "Consistency", "severity": "High",
+    {"rule_id": "R015", "rule_name": "Submission vs Service Date Timeliness", "dimension": "Timeliness", "severity": "High",
      "applicable_record_types": ["MEDICAL_CLAIM", "PHARMACY_CLAIM", "PRIOR_AUTH"], "fields": ["Service_Date", "Submission_Date"],
      "description": "Submission_Date must not be before Service_Date.",
      "recommended_fix": "Investigate time zone issues or data entry errors causing submissions prior to service."},
 
-    {"rule_id": "R016", "rule_name": "Processed vs Submission Date Consistency", "dimension": "Consistency", "severity": "Critical",
+    {"rule_id": "R016", "rule_name": "Processed vs Submission Date Timeliness", "dimension": "Timeliness", "severity": "Critical",
      "applicable_record_types": ["MEDICAL_CLAIM", "PHARMACY_CLAIM", "PRIOR_AUTH"], "fields": ["Submission_Date", "Processed_Date"],
      "description": "Processed_Date must not be before Submission_Date.",
      "recommended_fix": "Investigate system clock sync or ETL latency causing processed date anomalies."},
@@ -338,7 +338,7 @@ def run_quality_checks(df, rules):
 # not as part of this data-quality check.
 # ============================================================
 def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
-    dimensions = ["Completeness", "Validity", "Uniqueness", "Consistency"]
+    dimensions = ["Completeness", "Validity", "Consistency", "Uniqueness", "Timeliness"]
     for res in rule_results:
         dim_name = res.get("dimension")
         if dim_name and dim_name not in dimensions:
@@ -372,19 +372,18 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
             dim_scores[dim] = max(0.0, 100.0 - avg_rate)
 
     # Authoritative weighted aggregation across evaluated data quality dimensions
-    # Canonical engine weights: Completeness (27.78%), Validity (27.78%), Uniqueness (22.22%), Consistency (22.22%)
-    # Full 5-dimension weights (with Timeliness): Completeness (25%), Validity (25%), Consistency (20%), Uniqueness (20%), Timeliness (10%)
+    # Canonical 5-dimension weights: Completeness (25%), Validity (25%), Consistency (20%), Uniqueness (20%), Timeliness (10%)
     base_dimension_weights = {
-        "Completeness": 0.2778,
-        "Validity": 0.2778,
-        "Uniqueness": 0.2222,
-        "Consistency": 0.2222,
+        "Completeness": 0.25,
+        "Validity": 0.25,
+        "Consistency": 0.20,
+        "Uniqueness": 0.20,
         "Timeliness": 0.10,
     }
-    total_w = sum(base_dimension_weights.get(d, 1.0 / len(dim_scores)) for d in dim_scores)
+    total_w = sum(base_dimension_weights.get(d, 0.20) for d in dim_scores)
     if total_w > 0:
         overall_score = sum(
-            (base_dimension_weights.get(d, 1.0 / len(dim_scores)) / total_w) * dim_scores[d]
+            (base_dimension_weights.get(d, 0.20) / total_w) * dim_scores[d]
             for d in dim_scores
         )
     else:

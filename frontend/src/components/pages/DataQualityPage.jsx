@@ -89,15 +89,8 @@ export default function DataQualityPage() {
     { label: 'Validity', value: Number(validity.toFixed(1)), color: '#f59e0b', sublabel: 'Code schema & allowed ranges' },
     { label: 'Consistency', value: Number(consistency.toFixed(1)), color: '#7c3aed', sublabel: 'Cross-table referential integrity' },
     { label: 'Uniqueness', value: Number(uniqueness.toFixed(1)), color: '#2563eb', sublabel: 'Unique primary keys & deduplication' },
+    { label: 'Timeliness', value: Number(timeliness.toFixed(1)), color: '#0284c7', sublabel: 'Valid chronological date sequence' },
   ]
-  if (dimScores.Timeliness !== undefined || dimScores.timeliness !== undefined) {
-    dimensionChartData.push({
-      label: 'Timeliness',
-      value: Number(timeliness.toFixed(1)),
-      color: '#0284c7',
-      sublabel: 'Valid chronological date sequence'
-    })
-  }
 
   // Extract actual backend processing integrity data
   const integrity = statistics?.processing_integrity || null
@@ -328,6 +321,10 @@ export default function DataQualityPage() {
           <div className="ml-field-row">
             <span className="ml-field-label">Uniqueness</span>
             <span className="ml-field-value">{fmtPct(uniqueness)}</span>
+          </div>
+          <div className="ml-field-row">
+            <span className="ml-field-label">Timeliness</span>
+            <span className="ml-field-value">{fmtPct(timeliness)}</span>
           </div>
           <div className="ml-field-row">
             <span className="ml-field-label">Missing Values</span>
