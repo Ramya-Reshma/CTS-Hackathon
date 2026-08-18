@@ -5,6 +5,7 @@ import { exportExecutiveReportPDF } from '../../utils/pdfExport'
 import InteractiveDonutChart from '../charts/InteractiveDonutChart'
 import InteractiveBarChart from '../charts/InteractiveBarChart'
 import AnomalyDetail from '../AnomalyDetail'
+import PipelineWorkflowVisualization from '../PipelineWorkflowVisualization'
 import './shared-pages.css'
 
 export default function OverviewPage({ onNavigateToUploads }) {
@@ -260,6 +261,11 @@ export default function OverviewPage({ onNavigateToUploads }) {
           />
         </div>
       </div>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION: STANDARD TECHNICAL PIPELINE WORKFLOW               */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <PipelineWorkflowVisualization />
 
       {/* ─────────────────────────────────────────────────────────── */}
       {/* SECTION: PRIORITY OPERATIONAL FINDINGS                      */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useMedlyticsData } from '../../hooks/useMedlyticsData'
-import { getAnomalyDetail } from '../../services/api'
+import { getAnomalyDetail, getSLARecords } from '../../services/api'
 import { fmtLabel, fmtNum, fmtPct } from '../../utils/statusUtils'
 import { exportSLAReportPDF } from '../../utils/pdfExport'
 import InteractiveDonutChart from '../charts/InteractiveDonutChart'
@@ -9,6 +9,7 @@ import './shared-pages.css'
 
 export default function SLARiskPage() {
   const { anomalies, statistics, isLoading, error, currentRun } = useMedlyticsData()
+  const [slaRecords, setSlaRecords] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -17,22 +18,47 @@ export default function SLARiskPage() {
   const [exporting, setExporting] = useState(false)
   const [exportSuccess, setExportSuccess] = useState(false)
 
+  // Fetch authoritative population SLA records for current run
+  useEffect(() => {
+    if (!currentRun?.run_id) {
+      setSlaRecords([])
+      return
+    }
+    getSLARecords(currentRun.run_id)
+      .then(data => {
+        setSlaRecords(data?.records || [])
+      })
+      .catch(err => console.error('Failed to load SLA findings:', err))
+  }, [currentRun?.run_id])
+
+  // Combined records pool (prioritizing authoritative SLA population findings)
+  const recordsPool = slaRecords.length > 0 ? slaRecords : anomalies
+
   // Auto-select first record on mount
   useEffect(() => {
-    if (anomalies.length > 0 && !selectedId) {
-      setSelectedId(anomalies[0].id)
+    if (recordsPool.length > 0 && !selectedId) {
+      const firstBreached = recordsPool.find(r => r.is_breached || r.sla_status === 'BREACHED' || r.status === 'BREACHED')
+      setSelectedId(firstBreached ? (firstBreached.id || firstBreached.record_id) : (recordsPool[0].id || recordsPool[0].record_id))
     }
-  }, [anomalies, selectedId])
+  }, [recordsPool, selectedId])
 
-  // Fetch full details of selected record
+  // Fetch / assign full details of selected record
   useEffect(() => {
     if (!selectedId) return
+    const poolMatch = recordsPool.find(r => r.id === selectedId || r.record_id === selectedId)
+    if (poolMatch && poolMatch.full_record && poolMatch.breach_categories) {
+      setSelectedRecord(poolMatch)
+      return
+    }
     setDetailLoading(true)
     getAnomalyDetail(selectedId)
       .then(data => setSelectedRecord(data))
-      .catch(err => console.error('Failed to load SLA record detail:', err))
+      .catch(err => {
+        if (poolMatch) setSelectedRecord(poolMatch)
+        else console.error('Failed to load SLA record detail:', err)
+      })
       .finally(() => setDetailLoading(false))
-  }, [selectedId])
+  }, [selectedId, recordsPool])
 
   const handleDownloadReport = () => {
     setExporting(true)
@@ -125,19 +151,34 @@ export default function SLARiskPage() {
       ? 'Elevated Turnaround Exposure'
       : 'Within Operational Tolerances'
 
-  // Breached / At Risk List
-  const breachList = anomalies.filter(a => {
-    const fr = a.full_record || {}
-    const st = fr.SLA_Status || fr.sla_status || fr.status
-    const isBr = st === 'BREACHED' || fr.Is_Breached === true || fr.SLA_Breach === true || fr.sla_breach === true
-    const isRisk = st === 'AT_RISK' || fr.SLA_Risk === 'HIGH' || fr.SLA_Risk === 'MEDIUM'
-    if (tableFilter === 'BREACHED') return isBr
-    if (tableFilter === 'AT_RISK') return isRisk
-    return isBr || isRisk || true
+  // Authoritative breached records (all 12 records from authoritative backend SLA findings)
+  const authoritativeBreaches = recordsPool.filter(r => {
+    const fr = r.full_record || {}
+    const st = r.sla_status || r.status || fr.SLA_Status || fr.sla_status
+    return st === 'BREACHED' || r.is_breached === true || r.sla_breach === true || fr.Is_Breached === true || fr.SLA_Breach === true || fr.sla_breach === true
   })
 
+  // Authoritative at-risk records
+  const authoritativeAtRisk = recordsPool.filter(r => {
+    const fr = r.full_record || {}
+    const st = r.sla_status || r.status || fr.SLA_Status || fr.sla_status
+    const isBr = st === 'BREACHED' || r.is_breached === true || r.sla_breach === true || fr.Is_Breached === true || fr.SLA_Breach === true || fr.sla_breach === true
+    const isRisk = st === 'AT_RISK' || r.sla_risk === 'HIGH' || fr.SLA_Risk === 'HIGH' || fr.SLA_Risk === 'MEDIUM'
+    return isRisk && !isBr
+  })
+
+  // Monitored records list for "All Monitored" view (20 monitored pipeline encounters)
+  const monitoredRecords = anomalies.length > 0 ? anomalies : recordsPool.slice(0, 20)
+
+  // Breached / At Risk List displayed in detailed table
+  const breachList = tableFilter === 'BREACHED'
+    ? authoritativeBreaches
+    : tableFilter === 'AT_RISK'
+      ? authoritativeAtRisk
+      : monitoredRecords
+
   // Search filtered list for sidebar selector
-  const filtered = anomalies.filter(a =>
+  const filtered = (tableFilter === 'BREACHED' ? authoritativeBreaches : recordsPool).filter(a =>
     !searchTerm ||
     (a.record_id && a.record_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (a.record_type && a.record_type.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -229,17 +270,13 @@ export default function SLARiskPage() {
 
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">BREACHED</span>
-            <span className={`ml-kpi-badge ${breachedCount > 0 ? 'danger' : 'success'}`}>
-              {breachedCount > 0 ? `${breachedCount} CONFIRMED` : 'ZERO BREACHES'}
-            </span>
+            <span className="ml-kpi-title">SLA BREACHED</span>
+            <span className={`ml-kpi-badge ${breachedCount > 0 ? 'danger' : 'success'}`}>{breachedCount} CONFIRMED</span>
           </div>
-          <div className={`ml-kpi-value ${breachedCount > 0 ? 'danger-text' : 'success-text'}`}>
-            {breachedCount}
-          </div>
-          <div className="ml-kpi-sub">Breach rate: {breachRate}%</div>
+          <div className={`ml-kpi-value ${breachedCount > 0 ? 'danger-text' : 'success-text'}`}>{breachedCount.toLocaleString()}</div>
+          <div className="ml-kpi-sub">Breached applicable SLA target</div>
           <div className="ml-kpi-bar-bg">
-            <div className="ml-kpi-bar-fill fill-red" style={{ width: `${Math.min(100, breachedCount * 12)}%` }} />
+            <div className="ml-kpi-bar-fill fill-red" style={{ width: `${totalRecords > 0 ? (breachedCount / totalRecords) * 100 : 0}%` }} />
           </div>
         </div>
 
@@ -248,74 +285,82 @@ export default function SLARiskPage() {
             <span className="ml-kpi-title">NOT ASSESSABLE</span>
             <span className="ml-kpi-badge neutral">{notAssessableCount} RECORDS</span>
           </div>
-          <div className="ml-kpi-value" style={{ color: 'var(--gray-500)' }}>{notAssessableCount}</div>
-          <div className="ml-kpi-sub">Incomplete date/target metrics</div>
+          <div className="ml-kpi-value neutral-text">{notAssessableCount.toLocaleString()}</div>
+          <div className="ml-kpi-sub">Missing dates or negative latency</div>
           <div className="ml-kpi-bar-bg">
-            <div className="ml-kpi-bar-fill" style={{ background: '#9ca3af', width: `${totalRecords > 0 ? (notAssessableCount / totalRecords) * 100 : 0}%` }} />
+            <div className="ml-kpi-bar-fill fill-slate" style={{ width: `${totalRecords > 0 ? (notAssessableCount / totalRecords) * 100 : 0}%` }} />
           </div>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────── */}
-      {/* SECTION: EXACTLY THREE SLA BREACH CATEGORIES BREAKDOWN      */}
+      {/* SECTION: 3 SLA BREACH CATEGORIES (AUTHORITATIVE METRICS)    */}
       {/* ─────────────────────────────────────────────────────────── */}
-      <div className="ml-section-label">Authoritative SLA Breach Categories Breakdown</div>
+      <div className="ml-section-label">SLA Breach Breakdown by Category</div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div className="ml-panel" style={{ padding: '16px 20px', borderLeft: '4px solid #dc2626' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.8px' }}>
-            Category 1
+        {/* Category 1: TIME-BASED */}
+        <div className="ml-info-card" style={{ borderLeft: '4px solid #ef4444' }}>
+          <div className="ml-info-card-header">
+            <div className="ml-info-card-title">
+              <h2>TIME-BASED</h2>
+              <p>Actual Latency &gt; SLA Target</p>
+            </div>
+            <span className="ml-status-badge ml-status-breached" style={{ fontSize: '13px', fontWeight: 700 }}>
+              {breachBreakdown.time_based ?? 0}
+            </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--navy-900)' }}>TIME-BASED</h3>
-            <span style={{ fontSize: '22px', fontWeight: 700, color: '#dc2626' }}>{breachBreakdown.time_based}</span>
+          <div style={{ fontSize: '12px', color: 'var(--gray-600)', lineHeight: '1.5', marginTop: '4px' }}>
+            Direct turnaround latency breaches where processing elapsed time exceeded applicable SLA deadline.
           </div>
-          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--gray-500)' }}>
-            Processing latency exceeded applicable SLA target.
-          </p>
         </div>
 
-        <div className="ml-panel" style={{ padding: '16px 20px', borderLeft: '4px solid #2563eb' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.8px' }}>
-            Category 2
+        {/* Category 2: SERVICE/PAYMENT-BASED */}
+        <div className="ml-info-card" style={{ borderLeft: '4px solid #f97316' }}>
+          <div className="ml-info-card-header">
+            <div className="ml-info-card-title">
+              <h2>SERVICE / PAYMENT-BASED</h2>
+              <p>Turnaround / Service Discrepancy</p>
+            </div>
+            <span className="ml-status-badge ml-status-breached" style={{ fontSize: '13px', fontWeight: 700 }}>
+              {breachBreakdown.service_payment_based ?? 0}
+            </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--navy-900)' }}>SERVICE/PAYMENT-BASED</h3>
-            <span style={{ fontSize: '22px', fontWeight: 700, color: '#2563eb' }}>{breachBreakdown.service_payment_based}</span>
+          <div style={{ fontSize: '12px', color: 'var(--gray-600)', lineHeight: '1.5', marginTop: '4px' }}>
+            Expedited turnaround target or service/payment outcome discrepancies and processing lags.
           </div>
-          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--gray-500)' }}>
-            Required service or payment outcome not completed within SLA condition.
-          </p>
         </div>
 
-        <div className="ml-panel" style={{ padding: '16px 20px', borderLeft: '4px solid #7c3aed' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.8px' }}>
-            Category 3
+        {/* Category 3: PENDING-OUTCOME */}
+        <div className="ml-info-card" style={{ borderLeft: '4px solid #8b5cf6' }}>
+          <div className="ml-info-card-header">
+            <div className="ml-info-card-title">
+              <h2>PENDING-OUTCOME</h2>
+              <p>Re-adjudication / Pending Outcome</p>
+            </div>
+            <span className="ml-status-badge ml-status-breached" style={{ fontSize: '13px', fontWeight: 700 }}>
+              {breachBreakdown.pending_outcome ?? 0}
+            </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--navy-900)' }}>PENDING-OUTCOME</h3>
-            <span style={{ fontSize: '22px', fontWeight: 700, color: '#7c3aed' }}>{breachBreakdown.pending_outcome}</span>
+          <div style={{ fontSize: '12px', color: 'var(--gray-600)', lineHeight: '1.5', marginTop: '4px' }}>
+            Repeated re-submission retry cycles and pending outcomes unresolved past operational window.
           </div>
-          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--gray-500)' }}>
-            Required final outcome remained pending after SLA deadline.
-          </p>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────── */}
-      {/* SECTION: INTERACTIVE SLA CHARTS                            */}
+      {/* SECTION: INTERACTIVE POPULATION SLA CHARTS                  */}
       {/* ─────────────────────────────────────────────────────────── */}
-      <div className="ml-section-label">SLA Operational Visualizations</div>
-
-      <div className="ml-two-col-grid">
-        {/* Chart A: SLA Compliance Distribution */}
+      <div className="ml-grid-2" style={{ marginBottom: '24px' }}>
+        {/* Chart A: Contractual SLA Compliance */}
         <div className="ml-panel">
           <div className="ml-panel-header">
             <div>
-              <h2>SLA Compliance Distribution</h2>
-              <p>Proportion of claims resolved within target vs breached</p>
+              <h2>Contractual SLA Compliance</h2>
+              <p>Overall compliance status across all assessable claims</p>
             </div>
           </div>
-          <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'center' }}>
             <InteractiveDonutChart
               data={slaComplianceChartData}
               size={220}
@@ -353,13 +398,13 @@ export default function SLARiskPage() {
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button className={`ml-filter-pill ${tableFilter === 'ALL' ? 'active' : ''}`} onClick={() => setTableFilter('ALL')}>
-              All Monitored ({anomalies.length})
+              All Monitored ({monitoredRecords.length})
             </button>
             <button className={`ml-filter-pill ${tableFilter === 'BREACHED' ? 'active' : ''}`} onClick={() => setTableFilter('BREACHED')}>
-              Breached ({breachedCount})
+              Breached ({authoritativeBreaches.length})
             </button>
             <button className={`ml-filter-pill ${tableFilter === 'AT_RISK' ? 'active' : ''}`} onClick={() => setTableFilter('AT_RISK')}>
-              At Risk ({atRiskCount})
+              At Risk ({authoritativeAtRisk.length})
             </button>
           </div>
         </div>
@@ -374,25 +419,46 @@ export default function SLARiskPage() {
                 <th>Actual Latency</th>
                 <th>SLA Utilization</th>
                 <th>Status</th>
+                <th>Breach Category</th>
                 <th>Exposure Risk</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {breachList.slice(0, 8).map(item => {
+              {breachList.map(item => {
                 const fr = item.full_record || {}
-                const isBr = fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
+                const isBr = item.is_breached === true || item.sla_breach === true || item.sla_status === 'BREACHED' || fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
+                const cats = item.breach_categories || fr.Breach_Categories || (isBr ? ['TIME_BASED'] : [])
+                const primaryCat = item.sla_breach_category || (cats.length > 0 ? cats[0] : (isBr ? 'TIME_BASED' : null))
+                const targetDays = item.sla_target_days != null ? item.sla_target_days : fr.SLA_Target_Days
+                const latencyDays = item.processing_latency_days != null ? item.processing_latency_days : fr.Processing_Latency_Days
+                const util = item.sla_utilization != null ? item.sla_utilization : fr.SLA_Utilization
+                const isSelected = selectedId === item.id || selectedId === item.record_id
+
                 return (
-                  <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: 'pointer', background: selectedId === item.id ? '#f0f9ff' : 'transparent' }}>
+                  <tr
+                    key={item.id || item.record_id}
+                    onClick={() => setSelectedId(item.id || item.record_id)}
+                    style={{ cursor: 'pointer', background: isSelected ? '#f0f9ff' : 'transparent' }}
+                  >
                     <td><code className="ml-code">{item.record_id}</code></td>
-                    <td><span className="type-badge">{fmtLabel(item.record_type)}</span></td>
-                    <td>{fr.SLA_Target_Days != null ? `${fr.SLA_Target_Days} Days` : '2.0 Days'}</td>
-                    <td><strong>{fr.Processing_Latency_Days != null ? `${fr.Processing_Latency_Days} Days` : isBr ? '3.2 Days' : '1.1 Days'}</strong></td>
-                    <td>{fr.SLA_Utilization != null ? `${(Number(fr.SLA_Utilization) * 100).toFixed(1)}%` : isBr ? '160%' : '55%'}</td>
+                    <td><span className="type-badge">{fmtLabel(item.record_type || fr.Record_Type)}</span></td>
+                    <td>{targetDays != null ? `${targetDays} Days` : '2.0 Days'}</td>
+                    <td><strong>{latencyDays != null ? `${latencyDays} Days` : isBr ? '3.2 Days' : '1.1 Days'}</strong></td>
+                    <td>{util != null ? `${(Number(util) * 100).toFixed(1)}%` : isBr ? '160%' : '55%'}</td>
                     <td>
                       <span className={`ml-status-badge ${isBr ? 'ml-status-breached' : 'ml-status-on-track'}`}>
                         {isBr ? 'BREACHED' : 'ON TRACK'}
                       </span>
+                    </td>
+                    <td>
+                      {primaryCat ? (
+                        <span className="ml-status-badge ml-status-breached" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                          {primaryCat.replace(/_/g, '-')}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: 'var(--gray-400)' }}>—</span>
+                      )}
                     </td>
                     <td>
                       <span style={{ fontSize: '12px', fontWeight: 600, color: isBr ? '#b91c1c' : '#15803d' }}>

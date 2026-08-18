@@ -1,0 +1,254 @@
+/* =============================================================
+   STANDARD TECHNICAL PIPELINE WORKFLOW COMPONENT
+   Clean Enterprise White + Navy Styling
+   ============================================================= */
+
+.ml-workflow-container {
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+/* ── Container Header ───────────────────────────────────── */
+.ml-workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+}
+
+.ml-workflow-header-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-workflow-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--navy-600, #1e3a8a);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.ml-workflow-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy-900, #0a1628);
+  letter-spacing: -0.2px;
+  margin: 0 0 4px 0;
+}
+
+.ml-workflow-subtitle {
+  font-size: 13px;
+  color: var(--gray-500, #64748b);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ml-workflow-header-badge {
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.ml-workflow-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--navy-700, #1a3260);
+  background: var(--navy-50, #f0f4ff);
+  border: 1px solid var(--navy-200, #bfdbfe);
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+
+/* ── Stages List ────────────────────────────────────────── */
+.ml-workflow-stages {
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-workflow-stage-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-workflow-stage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 24px;
+  background: #ffffff;
+  transition: background-color 0.15s ease;
+}
+
+.ml-workflow-stage-item:hover {
+  background: var(--gray-50, #f8fafc);
+}
+
+/* Left Content Block */
+.ml-workflow-stage-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Green Check Indicator */
+.ml-workflow-check-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--green-50, #f0fdf4);
+  border: 1.5px solid var(--green-600, #16a34a);
+  color: var(--green-600, #16a34a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ml-workflow-stage-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ml-workflow-stage-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--navy-900, #0a1628);
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.ml-workflow-stage-desc {
+  font-size: 13px;
+  color: var(--gray-600, #475569);
+  line-height: 1.45;
+}
+
+/* ── Right-Aligned Status ───────────────────────────────── */
+.ml-workflow-stage-status {
+  flex-shrink: 0;
+  margin-left: 20px;
+  align-self: flex-start;
+  padding-top: 2px;
+}
+
+.ml-workflow-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--green-700, #15803d);
+  background: var(--green-50, #f0fdf4);
+  border: 1px solid var(--green-200, #bbf7d0);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+/* ── Thin Subtle Connector Separator ────────────────────── */
+.ml-workflow-connector {
+  height: 1px;
+  background: var(--gray-100, #f1f5f9);
+  margin: 0 24px;
+}
+
+/* ── Data Quality Expandable Subsection ─────────────────── */
+.ml-workflow-dq-gates-section {
+  margin-top: 10px;
+}
+
+.ml-workflow-dq-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #93c5fd;
+  color: var(--navy-600, #1e3a8a);
+  background: var(--navy-50, #f0f4ff);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ml-workflow-dq-toggle-btn:hover {
+  background: #e0e7ff;
+  border-color: #60a5fa;
+  color: var(--navy-800, #0e2040);
+}
+
+.ml-workflow-toggle-icon {
+  font-size: 10px;
+  color: var(--navy-500, #2563eb);
+}
+
+.ml-workflow-dq-gates-panel {
+  margin-top: 10px;
+  background: var(--surface-inset, #f8fafc);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+}
+
+.ml-workflow-dq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+}
+
+.ml-workflow-dq-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--gray-700, #334155);
+}
+
+.ml-workflow-dq-check {
+  font-weight: 700;
+  color: var(--green-600, #16a34a);
+  font-size: 13px;
+}
+
+.ml-workflow-dq-label {
+  font-weight: 500;
+}
+
+/* ── Responsive adjustments ─────────────────────────────── */
+@media (max-width: 640px) {
+  .ml-workflow-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .ml-workflow-header-badge {
+    margin-left: 0;
+  }
+
+  .ml-workflow-stage-item {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ml-workflow-stage-status {
+    margin-left: 40px;
+    align-self: flex-start;
+  }
+}

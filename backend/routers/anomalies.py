@@ -199,3 +199,114 @@ def get_run_integrity(run_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"[API] Error fetching integrity: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.get("/runs/{run_id}/sla")
+def get_run_sla_findings(run_id: str, db: Session = Depends(get_db)):
+    """
+    Get authoritative SLA findings and per-record details for an analysis run.
+    """
+    try:
+        run = get_run_by_id(db, run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
+
+        from pathlib import Path
+        import json
+
+        run_dir = Path(run.report_dir) if run.report_dir else (Path(__file__).resolve().parents[2] / "log" / "runs" / run_id)
+        sla_file_path = run_dir / "sla_temporal_findings.json"
+        if not sla_file_path.exists():
+            sla_file_path = Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"
+
+        sla_data = {}
+        if sla_file_path.exists():
+            try:
+                with open(sla_file_path, "r", encoding="utf-8") as f:
+                    sla_data = json.load(f)
+            except Exception as e:
+                logger.warning(f"[API] Failed to parse {sla_file_path}: {e}")
+
+        records = sla_data.get("record_level_findings", [])
+        summary = sla_data.get("summary", run.sla_summary or {})
+
+        # Load full anomaly report to merge any extra claim attributes if needed
+        report_file_path = run_dir / "final_anomaly_report.json"
+        if not report_file_path.exists():
+            report_file_path = Path(__file__).resolve().parents[2] / "log" / "final_anomaly_report.json"
+
+        full_report_map = {}
+        if report_file_path.exists():
+            try:
+                with open(report_file_path, "r", encoding="utf-8") as f:
+                    rep_list = json.load(f)
+                    if isinstance(rep_list, list):
+                        for r in rep_list:
+                            rid = str(r.get("Record_ID", "")).strip().upper()
+                            if rid:
+                                full_report_map[rid] = r
+            except Exception:
+                pass
+
+        enriched_records = []
+        for idx, rec in enumerate(records):
+            rid = str(rec.get("record_id", "")).strip().upper()
+            full_rec = full_report_map.get(rid, {})
+            merged = {**full_rec, **rec}
+
+            sla_status = rec.get("sla_status") or rec.get("status") or ("BREACHED" if rec.get("is_breached") else "ON_TRACK")
+            is_breached = bool(rec.get("is_breached", False) or sla_status == "BREACHED" or rec.get("sla_breach") is True)
+            breach_cats = rec.get("breach_categories", [])
+            breach_reasons = rec.get("breach_reasons", [])
+            primary_cat = breach_cats[0] if breach_cats else ("TIME_BASED" if is_breached else "NONE")
+
+            record_item = {
+                "id": rec.get("record_id") or f"SLA-{idx}",
+                "record_id": rec.get("record_id", ""),
+                "record_type": rec.get("record_type", full_rec.get("Record_Type", "")),
+                "sla_group": rec.get("sla_group", ""),
+                "batch_id": rec.get("batch_id", ""),
+                "sla_target_days": rec.get("sla_target_days", full_rec.get("SLA_Target_Days")),
+                "processing_latency_days": rec.get("processing_latency_days", full_rec.get("Processing_Latency_Days")),
+                "sla_utilization": rec.get("sla_utilization", full_rec.get("SLA_Utilization")),
+                "temporal_validity": rec.get("temporal_validity", "VALID"),
+                "status": sla_status,
+                "sla_status": sla_status,
+                "is_breached": is_breached,
+                "sla_breach": is_breached,
+                "sla_risk": rec.get("sla_risk", "HIGH" if is_breached else "LOW"),
+                "breach_categories": breach_cats,
+                "breach_reasons": breach_reasons,
+                "sla_breach_category": primary_cat,
+                "sla_breach_reason": "; ".join(breach_reasons) if breach_reasons else rec.get("reason", ""),
+                "reason": rec.get("reason", ""),
+                "full_record": {
+                    **merged,
+                    "Record_ID": rec.get("record_id", ""),
+                    "Record_Type": rec.get("record_type", full_rec.get("Record_Type", "")),
+                    "SLA_Target_Days": rec.get("sla_target_days", full_rec.get("SLA_Target_Days")),
+                    "Processing_Latency_Days": rec.get("processing_latency_days", full_rec.get("Processing_Latency_Days")),
+                    "SLA_Utilization": rec.get("sla_utilization", full_rec.get("SLA_Utilization")),
+                    "SLA_Status": sla_status,
+                    "Is_Breached": is_breached,
+                    "SLA_Breach": is_breached,
+                    "SLA_Risk": rec.get("sla_risk", "HIGH" if is_breached else "LOW"),
+                    "Breach_Categories": breach_cats,
+                    "Breach_Reasons": breach_reasons,
+                    "SLA_Breach_Category": primary_cat,
+                    "SLA_Reason": "; ".join(breach_reasons) if breach_reasons else rec.get("reason", ""),
+                }
+            }
+            enriched_records.append(record_item)
+
+        return {
+            "run_id": run_id,
+            "total_records": len(enriched_records),
+            "summary": summary,
+            "records": enriched_records,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[API] Error fetching SLA findings: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

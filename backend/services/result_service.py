@@ -397,8 +397,6 @@ def save_analysis_run(
         anomalies = [
             r for r in source_records
             if bool(r.get("ML_Is_Anomalous", False))
-            or bool(r.get("SLA_Breach", False))
-            or (r.get("SLA_Status") == "BREACHED")
         ]
         synthesis_lookup = _load_synthesis_lookup(report_json_path)
 

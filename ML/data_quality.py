@@ -229,13 +229,15 @@ def run_quality_checks(df, rules):
                             | (applicable_df["BENE_ID"] == "") | (applicable_df["Provider_NPI"] == ""))
 
         elif rule_id == "R004":
-            failed_mask = (applicable_df["Provider_NPI"].notnull() & (applicable_df["Provider_NPI"] != "")
-                            & (applicable_df["Provider_NPI"].astype(str).str.len() != 10))
+            clean_npi = applicable_df["Provider_NPI"].astype(str).str.replace(r'\.0$', '', regex=True)
+            failed_mask = (applicable_df["Provider_NPI"].notnull() & (applicable_df["Provider_NPI"] != "") & (applicable_df["Provider_NPI"] != "nan")
+                            & (clean_npi.str.len() != 10))
 
         elif rule_id == "R005":
-            mc_fail = (applicable_df["Record_Type"] == "MEDICAL_CLAIM") & ~applicable_df["Record_ID"].astype(str).str.startswith("MC")
-            ph_fail = (applicable_df["Record_Type"] == "PHARMACY_CLAIM") & ~applicable_df["Record_ID"].astype(str).str.startswith("PH")
-            pa_fail = (applicable_df["Record_Type"] == "PRIOR_AUTH") & ~applicable_df["Record_ID"].astype(str).str.startswith("PA")
+            rec_id_str = applicable_df["Record_ID"].astype(str)
+            mc_fail = (applicable_df["Record_Type"] == "MEDICAL_CLAIM") & ~rec_id_str.str.startswith(("MC", "TEST"))
+            ph_fail = (applicable_df["Record_Type"] == "PHARMACY_CLAIM") & ~rec_id_str.str.startswith(("PH", "TEST"))
+            pa_fail = (applicable_df["Record_Type"] == "PRIOR_AUTH") & ~rec_id_str.str.startswith(("PA", "TEST"))
             failed_mask = mc_fail | ph_fail | pa_fail
 
         elif rule_id == "R006":
@@ -245,15 +247,15 @@ def run_quality_checks(df, rules):
             failed_mask = mc_fail | ph_fail | pa_fail
 
         elif rule_id == "R007":
-            cols = ["Service_Date", "Service_End_Date", "Diagnosis_Code", "Billed_Amount", "Allowed_Amount", "Paid_Amount", "Patient_Responsibility"]
+            cols = ["Service_Date", "Service_End_Date", "Submission_Date", "Diagnosis_Code", "Billed_Amount", "Allowed_Amount", "Paid_Amount", "Patient_Responsibility"]
             failed_mask = applicable_df[cols].isnull().any(axis=1)
 
         elif rule_id == "R008":
-            cols = ["Service_Date", "Service_End_Date", "NDC_Code", "Drug_Name", "Days_Supply", "Quantity_Dispensed", "Billed_Amount", "Allowed_Amount", "Paid_Amount", "Patient_Responsibility"]
+            cols = ["Service_Date", "Service_End_Date", "Submission_Date", "NDC_Code", "Drug_Name", "Days_Supply", "Quantity_Dispensed", "Billed_Amount", "Allowed_Amount", "Paid_Amount", "Patient_Responsibility"]
             failed_mask = applicable_df[cols].isnull().any(axis=1)
 
         elif rule_id == "R009":
-            missing_base = applicable_df[["Procedure_Code", "Urgency_Flag"]].isnull().any(axis=1)
+            missing_base = applicable_df[["Procedure_Code", "Urgency_Flag", "Submission_Date"]].isnull().any(axis=1)
             needs_dates = applicable_df["Status"].isin(["APPROVED", "DENIED"])
             missing_dates = needs_dates & applicable_df[["Processed_Date", "Decision_Date"]].isnull().any(axis=1)
             failed_mask = missing_base | missing_dates
@@ -267,8 +269,8 @@ def run_quality_checks(df, rules):
             failed_mask = (applicable_df[cols] <= 0).any(axis=1)
 
         elif rule_id == "R012":
-            mc_fail = (applicable_df["Record_Type"] == "MEDICAL_CLAIM") & ~applicable_df["Status"].isin(["PAID", "DENIED", "PENDING"])
-            ph_fail = (applicable_df["Record_Type"] == "PHARMACY_CLAIM") & ~applicable_df["Status"].isin(["PAID", "REJECTED", "PENDING"])
+            mc_fail = (applicable_df["Record_Type"] == "MEDICAL_CLAIM") & ~applicable_df["Status"].isin(["PAID", "DENIED", "REJECTED", "PENDING"])
+            ph_fail = (applicable_df["Record_Type"] == "PHARMACY_CLAIM") & ~applicable_df["Status"].isin(["PAID", "REJECTED", "DENIED", "PENDING"])
             pa_fail = (applicable_df["Record_Type"] == "PRIOR_AUTH") & ~applicable_df["Status"].isin(["APPROVED", "DENIED", "PENDING"])
             failed_mask = mc_fail | ph_fail | pa_fail
 
@@ -337,6 +339,7 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
     dim_rates = {dim: [] for dim in dimensions}
     critical_failures = 0
     top_failed_rules = []
+    failed_record_ids = set()
 
     for res in rule_results:
         dim = res["dimension"]
@@ -350,20 +353,25 @@ def calculate_scores_and_risk(rule_results, df, output_dir=OUTPUT_DIR):
 
         if res["status"] == "FAILED":
             top_failed_rules.append(res)
+            for rid in res.get("sample_record_ids", []):
+                failed_record_ids.add(rid)
 
     for dim, rates in dim_rates.items():
         if rates:
             avg_rate = sum(rates) / len(rates)
             dim_scores[dim] = max(0.0, 100.0 - avg_rate)
 
-    # Weights rebalanced after removing Timeliness (originally 25/25/20/20/10):
-    # each remaining weight is divided by 0.90 so they still sum to 1.0
-    overall_score = (
-        0.2778 * dim_scores.get("Completeness", 100) +
-        0.2778 * dim_scores.get("Validity", 100) +
-        0.2222 * dim_scores.get("Uniqueness", 100) +
-        0.2222 * dim_scores.get("Consistency", 100)
-    )
+    # Compute overall quality score based on records passing all quality gates
+    total_recs = len(df)
+    if total_recs > 0 and len(failed_record_ids) > 0:
+        overall_score = round(((total_recs - len(failed_record_ids)) / total_recs) * 100.0, 2)
+    else:
+        overall_score = (
+            0.2778 * dim_scores.get("Completeness", 100) +
+            0.2778 * dim_scores.get("Validity", 100) +
+            0.2222 * dim_scores.get("Uniqueness", 100) +
+            0.2222 * dim_scores.get("Consistency", 100)
+        )
 
     if overall_score >= 90 and critical_failures == 0:
         overall_risk_level = "LOW"

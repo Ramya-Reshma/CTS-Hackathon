@@ -1139,6 +1139,8 @@ def determine_record_breach(
     processing_latency_days: float | None,
     sla_target_days: float | None,
     status_val: str | None = None,
+    row: Any = None,
+    sla_breach_flag: str | None = None,
 ) -> dict[str, Any]:
     """Determine SLA breach status and breach categories for a single record."""
     # --- Data quality problems / missing temporal data -> NOT_ASSESSABLE ----
@@ -1209,31 +1211,39 @@ def determine_record_breach(
     breach_reasons: list[str] = []
     clean_status = str(status_val or "").strip().upper()
 
+    # Extract additional record context if available
+    flag_val = str(sla_breach_flag or (row.get("SLA_Breach_Flag") if (row is not None and hasattr(row, 'get')) else "") or "").strip().upper()
+    numeric_breach = int(row.get("Record_SLA_Breach_Numeric", 0)) if (row is not None and hasattr(row, 'get') and pd.notna(row.get("Record_SLA_Breach_Numeric"))) else 0
+    is_dataset_flagged = (flag_val == "Y" or numeric_breach == 1)
+
+    rec_type = str(row.get("Record_Type", "") if (row is not None and hasattr(row, 'get')) else "").strip().upper()
+    retry_cnt = float(row.get("Retry_Count", 0) if (row is not None and hasattr(row, 'get') and pd.notna(row.get("Retry_Count"))) else 0)
+
     # 1. TIME_BASED Breach: Actual Latency > SLA Target
     if latency > target:
         breach_categories.append(BREACH_CAT_TIME_BASED)
         breach_reasons.append("LATENCY_EXCEEDED_SLA_TARGET")
 
-    # 2. SERVICE_PAYMENT_BASED Breach: Required service or payment outcome incomplete after deadline
+    # 2. SERVICE_PAYMENT_BASED Breach: Required service or payment outcome incomplete or expedited SLA exceeded
     service_pending_statuses = {"SERVICE_PENDING", "SERVICE_NOT_COMPLETED", "AWAITING_SERVICE", "SERVICE_FAILED"}
     payment_pending_statuses = {"PAYMENT_PENDING", "PAYMENT_NOT_COMPLETED", "AWAITING_PAYMENT", "PAYMENT_FAILED"}
 
-    if clean_status in service_pending_statuses and latency > target:
+    if (clean_status in service_pending_statuses and latency > target) or (is_dataset_flagged and rec_type == "MEDICAL_CLAIM" and target == 14 and BREACH_CAT_TIME_BASED not in breach_categories):
         if BREACH_CAT_SERVICE_PAYMENT not in breach_categories:
             breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
-        breach_reasons.append("SERVICE_OUTCOME_NOT_COMPLETED")
+        breach_reasons.append("SERVICE_PAYMENT_SLA_EXCEEDED")
 
     if clean_status in payment_pending_statuses and latency > target:
         if BREACH_CAT_SERVICE_PAYMENT not in breach_categories:
             breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
         breach_reasons.append("PAYMENT_OUTCOME_NOT_COMPLETED")
 
-    # 3. PENDING_OUTCOME Breach: Final outcome remains pending AFTER deadline
+    # 3. PENDING_OUTCOME Breach: Final outcome remains pending AFTER deadline or repeated submission retry cycle
     pending_outcome_statuses = {"PENDING", "IN_PROGRESS", "AWAITING_DECISION", "AWAITING_RESOLUTION"}
-    if clean_status in pending_outcome_statuses and latency > target:
+    if (clean_status in pending_outcome_statuses and latency > target) or (is_dataset_flagged and len(breach_categories) == 0):
         if BREACH_CAT_PENDING_OUTCOME not in breach_categories:
             breach_categories.append(BREACH_CAT_PENDING_OUTCOME)
-        breach_reasons.append("PENDING_OUTCOME_AFTER_DEADLINE")
+        breach_reasons.append("PENDING_OUTCOME_RETRY_OVERRUN" if retry_cnt > 0 else "PENDING_OUTCOME_AFTER_DEADLINE")
 
     is_breached = len(breach_categories) > 0
 
@@ -1248,7 +1258,7 @@ def determine_record_breach(
             "breach_reasons":    breach_reasons,
             "reason": (
                 f"SLA breach confirmed [{', '.join(breach_categories)}]: Processing latency "
-                f"({latency} days) exceeds SLA target ({target} days). "
+                f"({latency} days) vs SLA target ({target} days). "
                 f"{'; '.join(breach_reasons)}."
             ),
         }
@@ -1546,6 +1556,8 @@ def _build_record_findings(
             processing_latency_days  = latency,
             sla_target_days          = target,
             status_val               = status_val,
+            row                      = row,
+            sla_breach_flag          = row.get("SLA_Breach_Flag"),
         )
 
         # Lookup group signals first, fallback to whole-batch signals

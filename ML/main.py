@@ -139,15 +139,21 @@ def run_pipeline(
         iso_anomaly = bool(row.get("ISO_Is_Anomaly", False))
         corr_anomaly = bool(row.get("Correlation_Anomaly", False))
         qs_anomaly = bool(row.get("Quantity_Supply_Anomaly", False))
-        
-        signal_count = sum([iso_anomaly, corr_anomaly, qs_anomaly])
-        is_anomalous = signal_count > 0
-        
         stat_anomaly = bool(row.get("Stat_Is_Anomalous", False))
         stat_fields = row.get("Stat_Anomaly_Fields", [])
         has_stat_fields = bool(stat_fields) and (len(stat_fields) > 0 if isinstance(stat_fields, (list, tuple)) else str(stat_fields) not in ("", "nan", "[]"))
-        
-        if stat_anomaly and has_stat_fields:
+        is_stat_anomaly = stat_anomaly and has_stat_fields
+
+        signal_count = sum([iso_anomaly, corr_anomaly, qs_anomaly, is_stat_anomaly])
+        is_anomalous = signal_count > 0
+
+        if is_stat_anomaly and corr_anomaly:
+            anomaly_type = "Composite Anomaly"
+            primary_signal = f"Statistical Outlier ({stat_fields}) & Correlation Anomaly"
+        elif is_stat_anomaly and iso_anomaly:
+            anomaly_type = "Composite Anomaly"
+            primary_signal = f"Statistical Outlier ({stat_fields}) & Isolation Forest"
+        elif is_stat_anomaly:
             anomaly_type = "Statistical Anomaly"
             primary_signal = stat_fields
         elif corr_anomaly:

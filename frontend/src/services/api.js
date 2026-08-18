@@ -162,6 +162,22 @@ export const getAnomalyDetail = async (anomalyId) => {
 }
 
 /**
+ * Get authoritative SLA records and findings for a run
+ */
+export const getSLARecords = async (runId) => {
+  const response = await api.get(`/runs/${runId}/sla`)
+  return response.data
+}
+
+/**
+ * Get 4-stage processing integrity for a run
+ */
+export const getProcessingIntegrity = async (runId) => {
+  const response = await api.get(`/runs/${runId}/integrity`)
+  return response.data
+}
+
+/**
  * Download results as CSV
  */
 export const downloadResults = async (runId, options = {}) => {
