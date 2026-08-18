@@ -14,6 +14,7 @@ class RCAAgent:
     Root Cause Analysis Agent.
     Orchestrates evidence reasoning, RAG knowledge synthesis, and AWS Bedrock LLM generation.
     """
+    _LLM_UNAVAILABLE = False
 
     def __init__(self):
         self.use_bedrock = settings.USE_BEDROCK
@@ -143,11 +144,15 @@ class RCAAgent:
         user_prompt = rag.build_rag_prompt(evidence_package, historical_cases)
 
         # Step 3: Call LLM
+        if RCAAgent._LLM_UNAVAILABLE:
+            return rag.generate_rag_recommendation(evidence_package, kb_path=kb_path)
+
         try:
             raw_text = self._generate_llm_response(user_prompt, system_prompt)
             return self._parse_and_validate(raw_text, evidence_package, historical_cases)
         except Exception as e:
-            print(f"[RCAAgent] LLM execution failed ({e}); generating deterministic RAG recommendation.")
+            RCAAgent._LLM_UNAVAILABLE = True
+            print(f"[RCAAgent] LLM execution failed ({e}); switching to deterministic RAG recommendation.")
             return rag.generate_rag_recommendation(evidence_package, kb_path=kb_path)
 
     def run_rca(self, evidence_package: Dict[str, Any]) -> schemas.RCAAnalysis:
