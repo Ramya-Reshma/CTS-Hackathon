@@ -605,7 +605,10 @@ export default function RecommendationPage() {
   const full = selectedRecord?.full_record || {}
   const isAnomalous = full.ML_Is_Anomalous === true || full.ISO_Is_Anomaly === true || selectedRecord?.severity === 'HIGH' || selectedRecord?.severity === 'MEDIUM'
   const slaStatus = full.SLA_Status ?? full.sla_status ?? full.status ?? 'ON_TRACK'
-  const dqStatus = (statistics?.overall_data_quality_score ?? 88.8) >= 80 ? 'PASS' : 'WARNING'
+  const dqScore = statistics?.overall_data_quality_score != null ? Number(statistics.overall_data_quality_score) : 100.0
+  const dqStatus = statistics?.overall_risk_level ? (
+    statistics.overall_risk_level === 'LOW' ? 'PASS' : statistics.overall_risk_level === 'MEDIUM' ? 'WARNING' : 'FAIL'
+  ) : (dqScore >= 80 ? 'PASS' : 'WARNING')
   const evidenceList = Array.isArray(selectedRecord?.evidence) && selectedRecord.evidence.length > 0 ? selectedRecord.evidence : selectedRecord?.primary_signal ? [selectedRecord.primary_signal] : []
   const observedFacts = Array.isArray(selectedRecord?.observed_facts) ? selectedRecord.observed_facts : []
   const filtered = anomalies.filter(a => !searchTerm || (a.record_id?.toLowerCase().includes(searchTerm.toLowerCase())))
@@ -867,7 +870,7 @@ export default function RecommendationPage() {
                   <div className="ml-signals-list">
                     <div className="ml-signal-item"><span className="ml-signal-dot" /><div><strong>Anomaly Engine:</strong> {selectedRecord.anomaly_type || 'ML Multivariate'} (Severity: {selectedRecord.severity || 'Normal'})</div></div>
                     <div className="ml-signal-item"><span className="ml-signal-dot" /><div><strong>SLA Engine:</strong> Status: {slaStatus} · Target: {full.sla_target_days ? `${full.sla_target_days} Days` : '2.0 Days'}</div></div>
-                    <div className="ml-signal-item"><span className="ml-signal-dot" /><div><strong>Data Quality Engine:</strong> Score: {fmtNum(statistics?.overall_data_quality_score ?? 88.8, 1)} / 100 · Status: {dqStatus}</div></div>
+                    <div className="ml-signal-item"><span className="ml-signal-dot" /><div><strong>Data Quality Engine:</strong> Score: {fmtNum(dqScore, 1)} / 100 · Status: {dqStatus}</div></div>
                   </div>
                 </div>
               </div>
