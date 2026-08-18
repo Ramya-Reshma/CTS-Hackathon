@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { formatRecommendations } from './recommendationFormatter'
 
 /**
  * Enterprise PDF Report Generation for MEDLYTICS
@@ -420,9 +421,14 @@ export function exportRecommendationReportPDF({ runInfo, statistics, anomalies, 
   doc.setTextColor(...BRAND_NAVY)
   doc.text('Operational Recommendation & Root Cause', 14, startY)
 
+  const formattedActions = formatRecommendations(rec.recommended_action, {
+    isAnomalous: rec.severity === 'HIGH' || rec.severity === 'MEDIUM',
+    severity: rec.severity,
+    anomaly_type: rec.anomaly_type
+  })
+
   const recRows = [
-    ['Primary Root Cause', rec.likely_root_cause || 'Multivariate anomaly deviation detected across claims parameters.'],
-    ['Recommended Action', rec.recommended_action || 'Perform supervisory clinical and financial reconciliation.'],
+    ['Recommended Action', formattedActions.map(a => `• ${a}`).join('\n')],
     ['ARES Evaluation State', evaluation?.decision_state || (full.SLA_Status === 'BREACHED' ? 'MANUAL_REVIEW_REQUIRED' : 'AUTO_FIX_ELIGIBLE')],
     ['Governance Rule', 'Deterministic safe-to-fix validation gate with automated pre-mutation snapshot.']
   ]

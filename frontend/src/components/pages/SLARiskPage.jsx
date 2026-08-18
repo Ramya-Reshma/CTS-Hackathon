@@ -417,7 +417,6 @@ export default function SLARiskPage() {
                 <th>Claim Type</th>
                 <th>Target SLA</th>
                 <th>Actual Latency</th>
-                <th>SLA Utilization</th>
                 <th>Status</th>
                 <th>Breach Category</th>
                 <th>Exposure Risk</th>
@@ -432,7 +431,6 @@ export default function SLARiskPage() {
                 const primaryCat = item.sla_breach_category || (cats.length > 0 ? cats[0] : (isBr ? 'TIME_BASED' : null))
                 const targetDays = item.sla_target_days != null ? item.sla_target_days : fr.SLA_Target_Days
                 const latencyDays = item.processing_latency_days != null ? item.processing_latency_days : fr.Processing_Latency_Days
-                const util = item.sla_utilization != null ? item.sla_utilization : fr.SLA_Utilization
                 const isSelected = selectedId === item.id || selectedId === item.record_id
 
                 return (
@@ -445,7 +443,6 @@ export default function SLARiskPage() {
                     <td><span className="type-badge">{fmtLabel(item.record_type || fr.Record_Type)}</span></td>
                     <td>{targetDays != null ? `${targetDays} Days` : '2.0 Days'}</td>
                     <td><strong>{latencyDays != null ? `${latencyDays} Days` : isBr ? '3.2 Days' : '1.1 Days'}</strong></td>
-                    <td>{util != null ? `${(Number(util) * 100).toFixed(1)}%` : isBr ? '160%' : '55%'}</td>
                     <td>
                       <span className={`ml-status-badge ${isBr ? 'ml-status-breached' : 'ml-status-on-track'}`}>
                         {isBr ? 'BREACHED' : 'ON TRACK'}
@@ -592,10 +589,6 @@ export default function SLARiskPage() {
                     <span className="ml-field-value">{processingLatency}</span>
                   </div>
                   <div className="ml-field-row">
-                    <span className="ml-field-label">SLA Utilization</span>
-                    <span className="ml-field-value">{slaUtilization}</span>
-                  </div>
-                  <div className="ml-field-row">
                     <span className="ml-field-label">Risk Level</span>
                     <span className="ml-field-value">{riskLevel}</span>
                   </div>
@@ -653,26 +646,27 @@ export default function SLARiskPage() {
                 <div className="ml-info-card-header">
                   <div className="ml-info-card-title">
                     <h2>SLA Processing Timeline</h2>
-                    <p>Visual progress against required resolution deadline</p>
+                    <p>Visual overview of the required resolution deadline</p>
                   </div>
                 </div>
-                <div className="ml-sla-timeline">
-                  <div className="ml-sla-timeline-label">Progress: Start → Deadline ({slaTarget})</div>
-                  <div className="ml-sla-bar-row">
-                    <div className="ml-sla-bar-bg">
-                      <div
-                        className="ml-sla-bar-fill low"
-                        style={{ width: slaUtilization !== 'Not available' ? slaUtilization : '12%' }}
-                      />
+                <div className="ml-info-card-body" style={{ padding: '18px 24px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', background: 'var(--surface-inset, #f8fafc)', padding: '16px 20px', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid var(--border-light, #e2e8f0)' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.5px', marginBottom: '4px' }}>Target SLA</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--navy-900)' }}>{slaTarget}</div>
                     </div>
-                    <span className="ml-sla-bar-pct">
-                      {slaUtilization !== 'Not available' ? slaUtilization : 'Normal'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--gray-400)', marginTop: '6px' }}>
-                    <span>Target: {slaTarget}</span>
-                    <span>Status: {slaStatus}</span>
-                    <span>Breach Exposure: {breachRiskDescription}</span>
+                    <div>
+                      <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.5px', marginBottom: '4px' }}>Status</div>
+                      <div style={{ marginTop: '2px' }}>
+                        <span className={`ml-status-badge ${slaStatus === 'BREACHED' ? 'ml-status-breached' : slaStatus === 'AT_RISK' || slaStatus === 'AT RISK' ? 'ml-status-at-risk' : 'ml-status-on-track'}`}>
+                          {slaStatus}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.5px', marginBottom: '4px' }}>Breach Exposure</div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: slaStatus === 'BREACHED' ? '#b91c1c' : 'var(--gray-700)' }}>{breachRiskDescription}</div>
+                    </div>
                   </div>
                 </div>
               </div>

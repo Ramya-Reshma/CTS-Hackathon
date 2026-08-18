@@ -8,6 +8,7 @@ import {
 } from '../../services/api'
 import { fmtLabel, fmtNum } from '../../utils/statusUtils'
 import { exportRecommendationReportPDF } from '../../utils/pdfExport'
+import { formatRecommendations } from '../../utils/recommendationFormatter'
 import './shared-pages.css'
 
 /* ─── Helper constants ─── */
@@ -772,7 +773,7 @@ export default function RecommendationPage() {
                     <div className="ml-field-grid">
                       <div className="ml-field-row">
                         <span className="ml-field-label">Anomaly Model</span>
-                        <span className="ml-field-value">Isolation Forest + Correlation</span>
+                        <span className="ml-field-value">Isolation Forest + Correlation Residual Analysis</span>
                       </div>
                       <div className="ml-field-row">
                         <span className="ml-field-label">Primary Signal</span>
@@ -790,12 +791,12 @@ export default function RecommendationPage() {
               {/* AUTO-RESOLUTION PANEL */}
               <AutoResolutionPanel selectedRecord={selectedRecord} runId={runId} />
 
-              {/* AI Recommendation */}
+              {/* RECOMMENDED ACTION */}
               <div className="ml-info-card" style={{ borderLeft: '4px solid var(--navy-600)' }}>
                 <div className="ml-info-card-header" style={{ background: 'var(--navy-50)' }}>
                   <div className="ml-info-card-title">
-                    <h2 style={{ color: 'var(--navy-900)' }}>AI Operational Recommendation</h2>
-                    <p>Evidence-grounded action determined by healthcare intelligence pipeline</p>
+                    <h2 style={{ color: 'var(--navy-900)', letterSpacing: '0.3px' }}>RECOMMENDED ACTION</h2>
+                    <p>Evidence-grounded operational action plan</p>
                   </div>
                   {selectedRecord.confidence != null && (
                     <span style={{ fontSize: '11px', fontWeight: 600, background: 'var(--surface-card)', padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--border-light)', color: 'var(--gray-700)' }}>
@@ -804,13 +805,22 @@ export default function RecommendationPage() {
                   )}
                 </div>
                 <div className="ml-info-card-body" style={{ padding: '20px 24px' }}>
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--navy-900)', lineHeight: '1.6', marginBottom: '14px' }}>
-                    {selectedRecord.recommended_action || (
-                      isAnomalous ? 'Initiate secondary clinical audit on authorization link and verify provider billing frequency.' : 'Routine adjudication approved. No operational hold required.'
-                    )}
-                  </div>
+                  <ul className="ml-rec-bullet-list">
+                    {formatRecommendations(selectedRecord.recommended_action, {
+                      isAnomalous,
+                      slaStatus,
+                      dqStatus,
+                      severity: selectedRecord.severity,
+                      anomaly_type: selectedRecord.anomaly_type,
+                      hasDqIssue: dqStatus !== 'PASS'
+                    }).map((action, idx) => (
+                      <li key={idx} className="ml-rec-bullet-item">
+                        {action}
+                      </li>
+                    ))}
+                  </ul>
                   {selectedRecord.impact && (
-                    <div style={{ background: 'var(--surface-inset)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginTop: '12px' }}>
+                    <div style={{ background: 'var(--surface-inset)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginTop: '16px' }}>
                       <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.6px', marginBottom: '4px' }}>Operational Impact</div>
                       <div style={{ fontSize: '13px', color: 'var(--gray-700)' }}>{selectedRecord.impact}</div>
                     </div>

@@ -1205,6 +1205,35 @@
   text-decoration: underline;
 }
 
+/* ─── Business Action Bullet List (RECOMMENDED ACTION) ─── */
+.ml-rec-bullet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.ml-rec-bullet-item {
+  position: relative;
+  padding-left: 26px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--navy-900, #0f172a);
+  font-weight: 500;
+}
 
+.ml-rec-bullet-item::before {
+  content: "•";
+  position: absolute;
+  left: 8px;
+  top: -1px;
+  color: var(--navy-600, #1e3a8a);
+  font-size: 22px;
+  line-height: 1;
+}
 
+.ml-rec-bullet-item:hover {
+  color: #1e3a8a;
+}

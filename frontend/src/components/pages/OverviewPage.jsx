@@ -88,12 +88,15 @@ export default function OverviewPage({ onNavigateToUploads }) {
     }
   }
 
-  // Priority findings filter
+  // Priority findings filter — all findings accessible without truncation
   const filteredFindings = anomalies.filter(a => {
     if (activeTabFilter === 'HIGH') return a.severity === 'HIGH'
-    if (activeTabFilter === 'SLA_BREACH') return a.full_record?.SLA_Status === 'BREACHED'
+    if (activeTabFilter === 'SLA_BREACH') return a.full_record?.SLA_Status === 'BREACHED' || a.is_breached === true || a.sla_breach === true
     return true
-  }).slice(0, 8)
+  })
+
+  const highCount = anomalies.filter(a => a.severity === 'HIGH').length
+  const breachCount = anomalies.filter(a => a.full_record?.SLA_Status === 'BREACHED' || a.is_breached === true || a.sla_breach === true).length
 
   return (
     <div className="ml-page">
@@ -287,18 +290,18 @@ export default function OverviewPage({ onNavigateToUploads }) {
               className={`ml-filter-pill ${activeTabFilter === 'HIGH' ? 'active' : ''}`}
               onClick={() => setActiveTabFilter('HIGH')}
             >
-              High Severity ({highSev})
+              High Severity ({highCount})
             </button>
             <button
               className={`ml-filter-pill ${activeTabFilter === 'SLA_BREACH' ? 'active' : ''}`}
               onClick={() => setActiveTabFilter('SLA_BREACH')}
             >
-              SLA Breaches ({slaBreaches})
+              SLA Breaches ({breachCount})
             </button>
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', maxHeight: '520px', overflowY: 'auto' }}>
           <table className="ml-table">
             <thead>
               <tr>

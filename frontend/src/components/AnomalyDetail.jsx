@@ -1,5 +1,6 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { getAnomalyDetail } from '../services/api'
+import { formatRecommendations } from '../utils/recommendationFormatter'
 import './AnomalyDetail.css'
 
 // Severity badge helpers (presentation only — no logic change)
@@ -12,8 +13,6 @@ export default function AnomalyDetail({ anomaly, onClose }) {
   const [detail, setDetail] = useState(anomaly)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [techOpen, setTechOpen] = useState(false)
-  const [signalsOpen, setSignalsOpen] = useState(false)
 
   // Load full detail if needed — unchanged logic
   useEffect(() => {
@@ -102,14 +101,22 @@ export default function AnomalyDetail({ anomaly, onClose }) {
             )}
 
             {/* Recommended Action */}
-            {detail.recommended_action && (
-              <div className="detail-section">
-                <h3>Recommended Action</h3>
-                <div className="action-box">
-                  <p>{detail.recommended_action}</p>
-                </div>
+            <div className="detail-section">
+              <h3>Recommended Action</h3>
+              <div className="action-box">
+                <ul className="ml-rec-bullet-list">
+                  {formatRecommendations(detail.recommended_action, {
+                    isAnomalous: detail.severity === 'HIGH' || detail.severity === 'MEDIUM',
+                    severity: detail.severity,
+                    anomaly_type: detail.anomaly_type
+                  }).map((action, idx) => (
+                    <li key={idx} className="ml-rec-bullet-item">
+                      {action}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
+            </div>
 
             {/* Business Impact */}
             {detail.impact && (
@@ -195,36 +202,6 @@ export default function AnomalyDetail({ anomaly, onClose }) {
                 </div>
               </div>
             </div>
-
-            {/* Anomaly Signals — collapsible */}
-            {detail.anomaly_signals && (
-              <div className="detail-section">
-                <button className="technical-toggle" onClick={() => setSignalsOpen(o => !o)} aria-expanded={signalsOpen}>
-                  <span>Anomaly Signals</span>
-                  <span className={`technical-toggle-arrow${signalsOpen ? ' open' : ''}`}>▾</span>
-                </button>
-                {signalsOpen && (
-                  <div className="technical-details">
-                    <pre>{JSON.stringify(detail.anomaly_signals, null, 2)}</pre>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Technical Details — collapsible */}
-            {detail.full_record && (
-              <div className="detail-section">
-                <button className="technical-toggle" onClick={() => setTechOpen(o => !o)} aria-expanded={techOpen}>
-                  <span>Technical Details</span>
-                  <span className={`technical-toggle-arrow${techOpen ? ' open' : ''}`}>▾</span>
-                </button>
-                {techOpen && (
-                  <div className="technical-details">
-                    <pre>{JSON.stringify(detail.full_record, null, 2)}</pre>
-                  </div>
-                )}
-              </div>
-            )}
 
           </div>
         )}

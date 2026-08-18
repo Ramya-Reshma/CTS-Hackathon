@@ -362,7 +362,7 @@ export default function AnomalyPage() {
                 <div className="ml-field-grid">
                   <div className="ml-field-row">
                     <span className="ml-field-label">Detection Model</span>
-                    <span className="ml-field-value">Isolation Forest + Robust Residuals</span>
+                    <span className="ml-field-value">Isolation Forest + Correlation Residual Analysis</span>
                   </div>
                   <div className="ml-field-row">
                     <span className="ml-field-label">Anomaly Type</span>
