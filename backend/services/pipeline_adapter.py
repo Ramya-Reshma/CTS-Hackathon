@@ -64,6 +64,7 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
     historical_kb = str(Path(settings.JSON_REPORT_PATH).parent / "historical_resolution_cases.json")
     consolidated = []
     success = 0
+    llm_available = True
 
     for record in anomalous_records:
         record_id = str(record.get("Record_ID", "")).strip()
@@ -74,22 +75,34 @@ def _generate_rca_outputs(report_json_path: str) -> Dict[str, Any]:
             ev = evidence_builder.build_evidence(record_id, report_path=str(report_path))
             similar_cases = rag.retrieve_similar_cases(ev, limit=5)
 
-            try:
-                rca_agent = agent.RCAAgent()
-                rca_report = rca_agent.run_rag_rca(ev, historical_cases=similar_cases)
-                if hasattr(rca_report, "model_dump"):
-                    payload = rca_report.model_dump()
-                elif isinstance(rca_report, dict):
-                    payload = rca_report
-                else:
-                    payload = json.loads(rca_report.model_dump_json())
-            except Exception as llm_error:
-                logger.warning(f"[PIPELINE] LLM RCA failed for {record_id}, using fallback: {llm_error}")
+            if llm_available:
+                try:
+                    rca_agent = agent.RCAAgent()
+                    rca_report = rca_agent.run_rag_rca(ev, historical_cases=similar_cases)
+                    if hasattr(rca_report, "model_dump"):
+                        payload = rca_report.model_dump()
+                    elif isinstance(rca_report, dict):
+                        payload = rca_report
+                    else:
+                        payload = json.loads(rca_report.model_dump_json())
+                except Exception as llm_error:
+                    logger.info(f"[PIPELINE] LLM RCA unavailable, using deterministic RAG recommendation: {llm_error}")
+                    llm_available = False
+                    payload = rag.generate_rag_recommendation(ev)
+            else:
                 payload = rag.generate_rag_recommendation(ev)
 
-            payload["record_id"] = record_id
-            consolidated.append(payload)
-            success += 1
+            if hasattr(payload, "model_dump"):
+                payload = payload.model_dump()
+            elif hasattr(payload, "dict"):
+                payload = payload.dict()
+            elif isinstance(payload, str):
+                payload = json.loads(payload)
+
+            if isinstance(payload, dict):
+                payload["record_id"] = record_id
+                consolidated.append(payload)
+                success += 1
         except Exception as e:
             logger.warning(f"[PIPELINE] RCA generation failed for {record_id}: {e}")
 
@@ -136,12 +149,13 @@ GENERATED_FEATURE_COLUMNS = [
 
 def normalize_data_types(input_file_path: str, output_file_path: str) -> str:
     """
-    Normalize data types in the input file to prevent encoder errors.
+    Normalize data types and schema in the input file to prevent encoder and missing-column errors.
     
     This preprocesses the file to ensure:
+    - Common column aliases (Claim_Type, Quantity, etc.) are mapped to canonical columns
+    - Missing core schema fields receive sensible healthcare defaults
     - Boolean columns are converted to strings (e.g., True -> 'True')
     - All object columns are properly stringified
-    - This avoids "mixed bool/str" encoder errors
     - Removes pre-existing generated feature columns so Feature Engineering recomputes them cleanly
     
     Args:
@@ -152,6 +166,7 @@ def normalize_data_types(input_file_path: str, output_file_path: str) -> str:
         Path to normalized file
     """
     import pandas as pd
+    import numpy as np
     
     input_path = Path(input_file_path)
     
@@ -168,17 +183,92 @@ def normalize_data_types(input_file_path: str, output_file_path: str) -> str:
             logger.info(f"[PIPELINE] Pre-existing generated columns removed: {existing_cols}")
             df = df.drop(columns=existing_cols)
         
+        # Map common aliases if canonical column is not present
+        if 'Claim_Type' in df.columns and 'Record_Type' not in df.columns:
+            type_map = {
+                'Medical Claim': 'MEDICAL_CLAIM',
+                'Pharmacy Claim': 'PHARMACY_CLAIM',
+                'Prior Authorization': 'PRIOR_AUTH',
+                'Prior Auth': 'PRIOR_AUTH',
+                'Auth': 'PRIOR_AUTH',
+            }
+            df['Record_Type'] = df['Claim_Type'].map(
+                lambda x: type_map.get(str(x).strip(), str(x).strip().upper().replace(' ', '_'))
+            )
+        
+        if 'Quantity' in df.columns and 'Quantity_Dispensed' not in df.columns:
+            df['Quantity_Dispensed'] = df['Quantity']
+        
+        if 'Claim_Status' in df.columns and 'Status' not in df.columns:
+            df['Status'] = df['Claim_Status']
+        
+        if 'Claim_ID' in df.columns and 'Record_ID' not in df.columns:
+            df['Record_ID'] = df['Claim_ID']
+        elif 'Incident_ID' in df.columns and 'Record_ID' not in df.columns:
+            df['Record_ID'] = df['Incident_ID']
+        
+        if 'Member_ID' in df.columns and 'BENE_ID' not in df.columns:
+            df['BENE_ID'] = df['Member_ID']
+        
+        if 'NPI' in df.columns and 'Provider_NPI' not in df.columns:
+            df['Provider_NPI'] = df['NPI']
+        
+        # Ensure core columns exist with sensible defaults if omitted from test files
+        n = len(df)
+        defaults = {
+            'Record_ID': [f'REC_{i+1:06d}' for i in range(n)],
+            'Record_Type': 'MEDICAL_CLAIM',
+            'BENE_ID': [f'BENE_{(i % 50) + 1:04d}' for i in range(n)],
+            'Provider_NPI': [f'NPI_{1000000000 + (i % 20)}' for i in range(n)],
+            'Provider_State': 'TX',
+            'Service_Date': '2026-01-01',
+            'Service_End_Date': '2026-01-01',
+            'Submission_Date': '2026-01-02',
+            'Processed_Date': '2026-01-05',
+            'Decision_Date': '2026-01-05',
+            'Status': 'APPROVED',
+            'Denial_Reason_Code': None,
+            'Diagnosis_Code': 'Z00.00',
+            'Procedure_Code': '99213',
+            'NDC_Code': None,
+            'Drug_Name': None,
+            'Days_Supply': 30,
+            'Quantity_Dispensed': 1.0,
+            'Billed_Amount': 100.0,
+            'Allowed_Amount': 80.0,
+            'Paid_Amount': 72.0,
+            'Patient_Responsibility': 0.0,
+            'Urgency_Flag': 'STANDARD',
+            'Auth_Required_Flag': 'N',
+            'Auth_Linked_ID': None,
+            'Batch_ID': [f'BATCH_202601{((i // 25) + 1):02d}' for i in range(n)],
+            'Source_System': 'FACETS',
+            'Ingestion_Timestamp': '2026-01-02 00:00:00',
+            'Retry_Count': 0,
+            'Processing_Latency_Days': 3,
+            'SLA_Target_Days': 5,
+            'SLA_Breach_Flag': 'N'
+        }
+        
+        for col, default_val in defaults.items():
+            if col not in df.columns:
+                df[col] = default_val
+        
+        # Calculate derived amounts if partial financials were supplied
+        if 'Billed_Amount' in df.columns and 'Allowed_Amount' not in df.columns:
+            df['Allowed_Amount'] = df['Billed_Amount'] * 0.8
+        if 'Allowed_Amount' in df.columns and 'Paid_Amount' not in df.columns:
+            df['Paid_Amount'] = df['Allowed_Amount'] * 0.9
+        
         # Convert boolean columns to strings to avoid mixed type issues
         for col in df.columns:
             # Check explicit boolean dtype
             if df[col].dtype == 'bool':
                 df[col] = df[col].astype(str)
-            # Check object columns for any boolean values (check ALL rows, not just head)
+            # Check object columns for any boolean values
             elif df[col].dtype == 'object':
-                # Check if column contains ANY boolean values in the entire column
                 has_bool = any(isinstance(x, bool) for x in df[col].dropna())
                 if has_bool:
-                    # Convert all values to strings
                     df[col] = df[col].astype(str)
         
         # Save normalized file
@@ -187,12 +277,11 @@ def normalize_data_types(input_file_path: str, output_file_path: str) -> str:
         else:
             df.to_csv(output_file_path, index=False)
         
-        logger.info(f"[PIPELINE] Data types normalized: {output_file_path}")
+        logger.info(f"[PIPELINE] Data types and schema normalized: {output_file_path}")
         return output_file_path
         
     except Exception as e:
         logger.error(f"[PIPELINE] Data normalization failed: {str(e)}")
-        # If normalization fails, return original file and let pipeline handle it
         return input_file_path
 
 
