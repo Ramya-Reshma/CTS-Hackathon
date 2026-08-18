@@ -269,9 +269,13 @@ def run_quality_checks(df, rules):
             failed_mask = (applicable_df[cols] <= 0).any(axis=1)
 
         elif rule_id == "R012":
-            mc_fail = (applicable_df["Record_Type"] == "MEDICAL_CLAIM") & ~applicable_df["Status"].isin(["PAID", "DENIED", "REJECTED", "PENDING"])
-            ph_fail = (applicable_df["Record_Type"] == "PHARMACY_CLAIM") & ~applicable_df["Status"].isin(["PAID", "REJECTED", "DENIED", "PENDING"])
-            pa_fail = (applicable_df["Record_Type"] == "PRIOR_AUTH") & ~applicable_df["Status"].isin(["APPROVED", "DENIED", "PENDING"])
+            valid_statuses_mc = ["PAID", "DENIED", "REJECTED", "PENDING", "SERVICE_PENDING", "SERVICE_NOT_COMPLETED", "PAYMENT_PENDING", "PAYMENT_NOT_COMPLETED", "IN_PROGRESS", "AWAITING_DECISION", "AWAITING_RESOLUTION", "AWAITING_SERVICE", "AWAITING_PAYMENT"]
+            valid_statuses_ph = ["PAID", "REJECTED", "DENIED", "PENDING", "IN_PROGRESS", "AWAITING_DECISION", "AWAITING_RESOLUTION"]
+            valid_statuses_pa = ["APPROVED", "DENIED", "PENDING", "IN_PROGRESS", "AWAITING_DECISION", "AWAITING_RESOLUTION", "SERVICE_PENDING", "SERVICE_NOT_COMPLETED", "PAYMENT_PENDING", "PAYMENT_NOT_COMPLETED"]
+
+            mc_fail = (applicable_df["Record_Type"] == "MEDICAL_CLAIM") & ~applicable_df["Status"].isin(valid_statuses_mc)
+            ph_fail = (applicable_df["Record_Type"] == "PHARMACY_CLAIM") & ~applicable_df["Status"].isin(valid_statuses_ph)
+            pa_fail = (applicable_df["Record_Type"] == "PRIOR_AUTH") & ~applicable_df["Status"].isin(valid_statuses_pa)
             failed_mask = mc_fail | ph_fail | pa_fail
 
         elif rule_id == "R013":

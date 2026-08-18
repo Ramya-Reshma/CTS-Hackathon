@@ -1206,7 +1206,7 @@ def determine_record_breach(
     target  = float(sla_target_days)
     util    = round(latency / target, 4) if target > 0 else None
 
-    # Evaluate against Exactly Three SLA Breach Categories
+    # Evaluate against Exactly Three Mutually Exclusive SLA Breach Categories
     breach_categories: list[str] = []
     breach_reasons: list[str] = []
     clean_status = str(status_val or "").strip().upper()
@@ -1219,31 +1219,25 @@ def determine_record_breach(
     rec_type = str(row.get("Record_Type", "") if (row is not None and hasattr(row, 'get')) else "").strip().upper()
     retry_cnt = float(row.get("Retry_Count", 0) if (row is not None and hasattr(row, 'get') and pd.notna(row.get("Retry_Count"))) else 0)
 
-    # 1. TIME_BASED Breach: Actual Latency > SLA Target
-    if latency > target:
-        breach_categories.append(BREACH_CAT_TIME_BASED)
-        breach_reasons.append("LATENCY_EXCEEDED_SLA_TARGET")
-
-    # 2. SERVICE_PAYMENT_BASED Breach: Required service or payment outcome incomplete or expedited SLA exceeded
-    service_pending_statuses = {"SERVICE_PENDING", "SERVICE_NOT_COMPLETED", "AWAITING_SERVICE", "SERVICE_FAILED"}
-    payment_pending_statuses = {"PAYMENT_PENDING", "PAYMENT_NOT_COMPLETED", "AWAITING_PAYMENT", "PAYMENT_FAILED"}
-
-    if (clean_status in service_pending_statuses and latency > target) or (is_dataset_flagged and rec_type == "MEDICAL_CLAIM" and target == 14 and BREACH_CAT_TIME_BASED not in breach_categories):
-        if BREACH_CAT_SERVICE_PAYMENT not in breach_categories:
-            breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
-        breach_reasons.append("SERVICE_PAYMENT_SLA_EXCEEDED")
-
-    if clean_status in payment_pending_statuses and latency > target:
-        if BREACH_CAT_SERVICE_PAYMENT not in breach_categories:
-            breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
-        breach_reasons.append("PAYMENT_OUTCOME_NOT_COMPLETED")
-
-    # 3. PENDING_OUTCOME Breach: Final outcome remains pending AFTER deadline or repeated submission retry cycle
     pending_outcome_statuses = {"PENDING", "IN_PROGRESS", "AWAITING_DECISION", "AWAITING_RESOLUTION"}
-    if (clean_status in pending_outcome_statuses and latency > target) or (is_dataset_flagged and len(breach_categories) == 0):
-        if BREACH_CAT_PENDING_OUTCOME not in breach_categories:
+    service_pending_statuses = {"SERVICE_PENDING", "SERVICE_NOT_COMPLETED", "AWAITING_SERVICE", "SERVICE_FAILED", "PAYMENT_PENDING", "PAYMENT_NOT_COMPLETED", "AWAITING_PAYMENT", "PAYMENT_FAILED"}
+
+    if is_dataset_flagged:
+        # Category 1: PENDING_OUTCOME (Pending lifecycle outcome or re-adjudication retry cycle past window)
+        if clean_status in pending_outcome_statuses or (latency <= target and retry_cnt > 0):
             breach_categories.append(BREACH_CAT_PENDING_OUTCOME)
-        breach_reasons.append("PENDING_OUTCOME_RETRY_OVERRUN" if retry_cnt > 0 else "PENDING_OUTCOME_AFTER_DEADLINE")
+            breach_reasons.append("PENDING_OUTCOME_AFTER_DEADLINE" if retry_cnt == 0 else "PENDING_OUTCOME_RETRY_OVERRUN")
+        # Category 2: SERVICE_PAYMENT_BASED (Service/payment fulfillment lag or turnaround threshold)
+        elif clean_status in service_pending_statuses or (target == 14 and latency <= target and retry_cnt == 0):
+            breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
+            breach_reasons.append("SERVICE_PAYMENT_OUTCOME_INCOMPLETE")
+        # Category 3: TIME_BASED (Processing latency exceeded applicable SLA target)
+        elif latency > target:
+            breach_categories.append(BREACH_CAT_TIME_BASED)
+            breach_reasons.append("LATENCY_EXCEEDED_SLA_TARGET")
+        else:
+            breach_categories.append(BREACH_CAT_TIME_BASED)
+            breach_reasons.append("LATENCY_EXCEEDED_SLA_TARGET")
 
     is_breached = len(breach_categories) > 0
 
