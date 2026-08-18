@@ -414,9 +414,6 @@ function AutoResolutionPanel({ selectedRecord, runId }) {
     </div>
   )
 }
-    </div>
-  )
-}
 
 /* ─── Main Page ─── */
 export default function RecommendationPage() {
