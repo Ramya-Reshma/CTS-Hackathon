@@ -505,6 +505,7 @@ def save_analysis_run(
 
                 result = AnomalyResult(
                     run_id=run_id,
+                    dataset_id=dataset_id,
                     record_id=record_id,
                     record_type=record_type,
                     severity=severity,
@@ -529,7 +530,7 @@ def save_analysis_run(
                 continue
 
         db.commit()
-        logger.info(f"[DB] Saved {len(anomalies)} anomaly results for run {run_id}")
+        logger.info(f"[DB] Saved {len(anomalies)} anomaly results for run {run_id} (dataset_id={dataset_id})")
 
         return run
 
@@ -549,12 +550,17 @@ def list_runs(
     """
     List recent analysis runs.
 
+    Args:
+        db: Database session
+        limit: Max records to return
+        offset: Offset for pagination
+
     Returns:
-        Tuple of (list of runs, total count)
+        Tuple of (runs_list, total_count)
     """
-    query = db.query(AnalysisRun).order_by(desc(AnalysisRun.created_at))
+    query = db.query(AnalysisRun)
     total = query.count()
-    runs = query.offset(offset).limit(limit).all()
+    runs = query.order_by(desc(AnalysisRun.created_at)).offset(offset).limit(limit).all()
     return runs, total
 
 
@@ -567,26 +573,26 @@ def get_anomalies_for_run(
     search_query: Optional[str] = None,
 ) -> Tuple[List[AnomalyResult], int]:
     """
-    Get anomalies for a run with optional filtering.
+    Get anomalies for a run with optional filtering and pagination.
 
     Args:
         db: Database session
-        run_id: Analysis run ID
-        severity: Optional filter (HIGH, MEDIUM, LOW)
+        run_id: Run ID to filter by
+        severity: Optional severity filter (HIGH, MEDIUM, LOW)
         page: Page number (1-indexed)
-        page_size: Results per page
-        search_query: Optional search string (record_id, type, etc.)
+        page_size: Records per page
+        search_query: Optional search term
 
     Returns:
-        Tuple of (results list, total count)
+        Tuple of (anomalies_list, total_count)
     """
     query = db.query(AnomalyResult).filter(AnomalyResult.run_id == run_id)
 
-    # Apply severity filter
-    if severity and severity.upper() in ["HIGH", "MEDIUM", "LOW"]:
+    # Filter by severity if provided
+    if severity:
         query = query.filter(AnomalyResult.severity == severity.upper())
 
-    # Apply search filter
+    # Search by record ID, type, anomaly type, or primary signal
     if search_query:
         search = f"%{search_query}%"
         query = query.filter(
@@ -594,6 +600,7 @@ def get_anomalies_for_run(
                 AnomalyResult.record_id.ilike(search),
                 AnomalyResult.record_type.ilike(search),
                 AnomalyResult.anomaly_type.ilike(search),
+                AnomalyResult.primary_signal.ilike(search),
             )
         )
 
@@ -613,7 +620,7 @@ def get_anomaly_detail(db: Session, anomaly_id: int) -> Optional[AnomalyResult]:
 
 def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     """
-    Get statistics for a run.
+    Get statistics for an isolated run.
 
     Returns:
         Dictionary with statistics
@@ -641,12 +648,17 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     confidences = [r.confidence for r in results if r.confidence is not None]
     avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
-    quality_summary = _load_quality_summary(str(Path(__file__).resolve().parents[2] / "log" / "quality_report.json"))
+    # Locate run-isolated artifact directory
+    run_dir = Path(run.report_dir) if run.report_dir else (Path(__file__).resolve().parents[2] / "log" / "runs" / run_id)
+    if not run_dir.exists():
+        run_dir = Path(__file__).resolve().parents[2] / "log"
+
+    quality_summary = run.quality_summary or _load_quality_summary(str(run_dir / "quality_report.json"))
     overall_quality_score = quality_summary.get("overall_quality_score")
     overall_risk_level = quality_summary.get("overall_risk_level")
 
-    # Authoritative population SLA summary loaded from pipeline findings
-    raw_sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
+    # Authoritative population SLA summary loaded for this specific run
+    raw_sla_summary = run.sla_summary or _load_sla_summary(str(run_dir / "sla_temporal_findings.json"))
     
     if raw_sla_summary:
         on_track = raw_sla_summary.get("on_track", raw_sla_summary.get("records_normal", 0))
@@ -693,9 +705,13 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
         }
 
     from services.processing_integrity import compute_processing_integrity
-    integrity_data = compute_processing_integrity()
+    report_file_path = str(run_dir / "final_anomaly_report.json")
+    integrity_data = compute_processing_integrity(report_file_path)
 
     response = {
+        "run_id": run.id,
+        "dataset_id": run.dataset_id,
+        "filename": run.filename,
         "total_records": run.total_records,
         "total_anomalies": run.anomaly_count,
         "by_severity": {
