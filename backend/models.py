@@ -65,6 +65,37 @@ class VerificationToken(Base):
 
 
 
+class Dataset(Base):
+    """
+    Metadata about an uploaded dataset.
+    """
+    __tablename__ = "datasets"
+
+    id = Column(String(64), primary_key=True)  # e.g., DS-20260818-001
+    filename = Column(String(256), nullable=False)
+    file_path = Column(String(512), nullable=False)
+    row_count = Column(Integer, nullable=False, default=0)
+    file_size_bytes = Column(Integer, nullable=False, default=0)
+    status = Column(String(50), nullable=False, default="UPLOADED")  # UPLOADED, READY, ANALYZED
+    schema_info = Column(JSON, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    # Relationships
+    runs = relationship("AnalysisRun", back_populates="dataset", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "dataset_id": self.id,
+            "filename": self.filename,
+            "file_path": self.file_path,
+            "row_count": self.row_count,
+            "file_size_bytes": self.file_size_bytes,
+            "status": self.status,
+            "schema_info": self.schema_info,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class AnalysisRun(Base):
     """
     Metadata about an analysis run.
@@ -73,7 +104,8 @@ class AnalysisRun(Base):
     """
     __tablename__ = "analysis_runs"
 
-    id = Column(String(64), primary_key=True)  # e.g., RUN-20260816-001
+    id = Column(String(64), primary_key=True)  # e.g., RUN-20260818-001
+    dataset_id = Column(String(64), ForeignKey("datasets.id"), nullable=True)
     filename = Column(String(256), nullable=False)  # Name of uploaded file
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     total_records = Column(Integer, nullable=False, default=0)  # Records in input file
@@ -84,15 +116,21 @@ class AnalysisRun(Base):
     processing_status = Column(String(50), nullable=False, default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)  # If processing failed
     pipeline_version = Column(String(50), nullable=False, default="1.0")
+    report_dir = Column(String(512), nullable=True)  # Path to run-specific isolated artifacts
+    sla_summary = Column(JSON, nullable=True)  # Run-specific population SLA summary
+    quality_summary = Column(JSON, nullable=True)  # Run-specific data quality report
 
-    # Relationship
+    # Relationships
+    dataset = relationship("Dataset", back_populates="runs")
     anomalies = relationship("AnomalyResult", back_populates="run", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
             "id": self.id,
+            "run_id": self.id,
+            "dataset_id": self.dataset_id,
             "filename": self.filename,
-            "created_at": self.created_at.isoformat(),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
             "total_records": self.total_records,
             "anomaly_count": self.anomaly_count,
             "severity_summary": {
@@ -116,6 +154,7 @@ class AnomalyResult(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     run_id = Column(String(64), ForeignKey("analysis_runs.id"), nullable=False)
+    dataset_id = Column(String(64), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     # Core fields from synthesis report
@@ -148,6 +187,8 @@ class AnomalyResult(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "run_id": self.run_id,
+            "dataset_id": self.dataset_id,
             "record_id": self.record_id,
             "record_type": self.record_type,
             "severity": self.severity,
@@ -163,7 +204,7 @@ class AnomalyResult(Base):
             "possible_causes": self.possible_causes,
             "evidence": self.evidence,
             "anomaly_signals": self.anomaly_signals,
-            "created_at": self.created_at.isoformat(),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
     def to_detail_dict(self):

@@ -1,177 +1,123 @@
 [
   {
     "priority": "MEDIUM",
-    "record_id": "TEST_0003",
+    "record_id": "TEST_0013",
     "anomaly_type": "Medical Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.004360205659554195 and severity 0.4625420464565343. Correlation analysis did not classify the record as anomalous, although the residual was -13.623152848389395. Z-score and IQR statistical checks did not detect an anomaly.",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.008919088000427178 and severity 0.7554940676981661. Correlation analysis did not classify the record as anomalous, although the residual was 4.547473508864641e-13. Statistical checks identified outliers in Processing_Latency_Days.",
     "observed_facts": [
-      "The record is a MEDICAL_CLAIM with ID TEST_0003.",
-      "The provider NPI is 1000000003.0.",
-      "The beneficiary ID is -10000010000003.",
-      "Financial parameters: Billed=$912.5, Paid=$642.4, Allowed=$730.0.",
-      "Isolation Forest flagged an anomaly (score=-0.004360205659554195, severity=0.4625420464565343).",
-      "Correlation residual between Paid and Allowed is -13.623152848389395 (flag=False)."
+      "The record is a MEDICAL_CLAIM with ID TEST_0013.",
+      "The provider NPI is 1713165214.0.",
+      "The beneficiary ID is -10000020000012.",
+      "Financial parameters: Billed=$2493.66, Paid=$1954.11, Allowed=$1954.11.",
+      "Isolation Forest flagged an anomaly (score=-0.008919088000427178, severity=0.7554940676981661).",
+      "Correlation residual between Paid and Allowed is 4.547473508864641e-13 (flag=False)."
+    ],
+    "possible_causes": [
+      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+      "Domain precedent (Submission delay outlier): timestamp semantics, timezone conversion, source transformation, or workflow sequencing defect.",
+      "Domain precedent (Negative processing latency): timestamp semantics, timezone conversion, source transformation, or workflow sequencing defect."
+    ],
+    "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "recommended_actions": [
+      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+      "validate event definitions and chronological rules, correct source/ETL timestamps, and reprocess affected transactions.",
+      "validate event definitions and chronological rules, correct source/ETL timestamps, and reprocess affected transactions."
+    ]
+  },
+  {
+    "priority": "HIGH",
+    "record_id": "TEST_0018",
+    "anomaly_type": "Prior Auth Multivariate Anomaly",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.06616446933222364 and severity 0.9082083124893615. Z-score and IQR statistical checks did not detect an anomaly.",
+    "observed_facts": [
+      "The record is a PRIOR_AUTH with ID TEST_0018.",
+      "The provider NPI is 1690618898.0.",
+      "The beneficiary ID is -10000020000017.",
+      "Isolation Forest flagged an anomaly (score=-0.06616446933222364, severity=0.9082083124893615)."
     ],
     "possible_causes": [
       "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
       "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+      "Domain precedent (Denied without reason): authorization workflow, linkage, effective dates, provider/member mapping, documentation, or SLA configuration problem."
     ],
     "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
     "recommended_actions": [
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
       "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
+      "reconcile claim and authorization systems, validate effective dates and scope, make required fields mandatory, and correct workflow linkage."
     ]
   },
   {
     "priority": "HIGH",
-    "record_id": "TEST_0005",
-    "anomaly_type": "Correlation Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 2. Isolation Forest flagged the record as anomalous with raw score -0.12516882855986988 and severity 1.0. Correlation analysis flagged an anomaly between Paid and Allowed amount with residual 155.24974917381235. Statistical checks identified outliers in Patient_Responsibility.",
-    "observed_facts": [
-      "The record is a MEDICAL_CLAIM with ID TEST_0005.",
-      "The provider NPI is 1000000005.0.",
-      "The beneficiary ID is -10000010000005.",
-      "Financial parameters: Billed=$987.5, Paid=$691.25, Allowed=$592.5.",
-      "Isolation Forest flagged an anomaly (score=-0.12516882855986988, severity=1.0).",
-      "Correlation residual between Paid and Allowed is 155.24974917381235 (flag=True)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Provider claim-volume outlier): provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
-      "Domain precedent (Provider denial-rate outlier): provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue."
-    ],
-    "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers.",
-      "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers."
-    ]
-  },
-  {
-    "priority": "HIGH",
-    "record_id": "TEST_0007",
-    "anomaly_type": "Correlation Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 2. Isolation Forest flagged the record as anomalous with raw score -0.1124079711246152 and severity 0.9432290166218427. Correlation analysis flagged an anomaly between Paid and Allowed amount with residual 168.46952669381903. Statistical checks identified outliers in Patient_Responsibility.",
-    "observed_facts": [
-      "The record is a MEDICAL_CLAIM with ID TEST_0007.",
-      "The provider NPI is 1000000007.0.",
-      "The beneficiary ID is -10000010000007.",
-      "Financial parameters: Billed=$1062.5, Paid=$743.75, Allowed=$637.5.",
-      "Isolation Forest flagged an anomaly (score=-0.1124079711246152, severity=0.9432290166218427).",
-      "Correlation residual between Paid and Allowed is 168.46952669381903 (flag=True)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Provider denial-rate outlier): provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue.",
-      "Domain precedent (Provider claim-volume outlier): provider behavior, patient mix, coding, contract, credentialing, location, or source-data issue."
-    ],
-    "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers.",
-      "normalize for specialty, geography, panel size and case mix; validate provider master data and review persistent outliers."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0033",
+    "record_id": "TEST_0022",
     "anomaly_type": "Medical Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.014711106618601977 and severity 0.5085915246578654. Correlation analysis did not classify the record as anomalous, although the residual was -7.227602448255084. Z-score and IQR statistical checks did not detect an anomaly.",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.053085696051251796 and severity 1.0. Correlation analysis did not classify the record as anomalous, although the residual was -4.547473508864641e-13. Statistical checks identified outliers in Processing_Latency_Days.",
     "observed_facts": [
-      "The record is a MEDICAL_CLAIM with ID TEST_0033.",
-      "The provider NPI is 1000000033.0.",
-      "The beneficiary ID is -10000010000033.",
-      "Financial parameters: Billed=$2037.5, Paid=$1434.4, Allowed=$1630.0.",
-      "Isolation Forest flagged an anomaly (score=-0.014711106618601977, severity=0.5085915246578654).",
-      "Correlation residual between Paid and Allowed is -7.227602448255084 (flag=False)."
+      "The record is a MEDICAL_CLAIM with ID TEST_0022.",
+      "The provider NPI is 1412518387.0.",
+      "The beneficiary ID is -10000020000021.",
+      "Financial parameters: Billed=$4643.23, Paid=$3679.61, Allowed=$3679.61.",
+      "Isolation Forest flagged an anomaly (score=-0.053085696051251796, severity=1.0).",
+      "Correlation residual between Paid and Allowed is -4.547473508864641e-13 (flag=False)."
     ],
     "possible_causes": [
       "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+      "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+      "Domain precedent (Submission delay outlier): timestamp semantics, timezone conversion, source transformation, or workflow sequencing defect."
     ],
     "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
     "recommended_actions": [
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
       "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
+      "validate event definitions and chronological rules, correct source/ETL timestamps, and reprocess affected transactions."
     ]
   },
   {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0039",
+    "priority": "HIGH",
+    "record_id": "TEST_0035",
     "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.020522177658645502 and severity 0.621041533434353. Correlation analysis did not classify the record as anomalous, although the residual was -5.948492368228472. Z-score and IQR statistical checks did not detect an anomaly.",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.03708271010014674 and severity 0.9581329580863893. Correlation analysis did not classify the record as anomalous, although the residual was 1.1368683772161603e-12. Z-score and IQR statistical checks did not detect an anomaly.",
     "observed_facts": [
-      "The record is a PHARMACY_CLAIM with ID TEST_0039.",
-      "The provider NPI is 1000000039.0.",
-      "The beneficiary ID is -10000010000039.",
-      "Financial parameters: Billed=$2262.5, Paid=$1592.8, Allowed=$1810.0.",
-      "Supply parameters: Quantity Dispensed=30.0, Days Supply=30.0.",
-      "Isolation Forest flagged an anomaly (score=-0.020522177658645502, severity=0.621041533434353).",
-      "Correlation residual between Paid and Allowed is -5.948492368228472 (flag=False).",
-      "Quantity Dispensed vs Days Supply residual is 0.0 (flag=False)."
+      "The record is a PHARMACY_CLAIM with ID TEST_0035.",
+      "The provider NPI is 1991447274.0.",
+      "The beneficiary ID is -10000020000034.",
+      "Financial parameters: Billed=$554.18, Paid=$532.96, Allowed=$532.96.",
+      "Supply parameters: Quantity Dispensed=25.0, Days Supply=14.0.",
+      "Isolation Forest flagged an anomaly (score=-0.03708271010014674, severity=0.9581329580863893).",
+      "Correlation residual between Paid and Allowed is 1.1368683772161603e-12 (flag=False).",
+      "Quantity Dispensed vs Days Supply residual is -25.662118240514943 (flag=False)."
     ],
     "possible_causes": [
       "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
       "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+      "Domain precedent (Multivariate medical anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue."
     ],
     "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
     "recommended_actions": [
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
-    ]
-  },
-  {
-    "priority": "HIGH",
-    "record_id": "TEST_0044",
-    "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.08809688442842278 and severity 1.0. Correlation analysis did not classify the record as anomalous, although the residual was -4.882567301539439. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PHARMACY_CLAIM with ID TEST_0044.",
-      "The provider NPI is 1000000044.0.",
-      "The beneficiary ID is -10000010000044.",
-      "Financial parameters: Billed=$2450.0, Paid=$1724.8, Allowed=$1960.0.",
-      "Supply parameters: Quantity Dispensed=30.0, Days Supply=30.0.",
-      "Isolation Forest flagged an anomaly (score=-0.08809688442842278, severity=1.0).",
-      "Correlation residual between Paid and Allowed is -4.882567301539439 (flag=False).",
-      "Quantity Dispensed vs Days Supply residual is 0.0 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue."
-    ],
-    "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation."
     ]
   },
   {
     "priority": "HIGH",
-    "record_id": "TEST_0055",
+    "record_id": "TEST_0038",
     "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.052453309880691856 and severity 0.8001110918683613. Correlation analysis did not classify the record as anomalous, although the residual was -2.537532154823566. Z-score and IQR statistical checks did not detect an anomaly.",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.03190661582717069 and severity 0.9296662971126549. Correlation analysis did not classify the record as anomalous, although the residual was 1.1368683772161603e-12. Z-score and IQR statistical checks did not detect an anomaly.",
     "observed_facts": [
-      "The record is a PHARMACY_CLAIM with ID TEST_0055.",
-      "The provider NPI is 1000000055.0.",
-      "The beneficiary ID is -10000010000055.",
-      "Financial parameters: Billed=$2862.5, Paid=$2015.2, Allowed=$2290.0.",
-      "Supply parameters: Quantity Dispensed=30.0, Days Supply=30.0.",
-      "Isolation Forest flagged an anomaly (score=-0.052453309880691856, severity=0.8001110918683613).",
-      "Correlation residual between Paid and Allowed is -2.537532154823566 (flag=False).",
-      "Quantity Dispensed vs Days Supply residual is 0.0 (flag=False)."
+      "The record is a PHARMACY_CLAIM with ID TEST_0038.",
+      "The provider NPI is 1428581204.0.",
+      "The beneficiary ID is -10000020000037.",
+      "Financial parameters: Billed=$837.58, Paid=$637.76, Allowed=$637.76.",
+      "Supply parameters: Quantity Dispensed=53.0, Days Supply=90.0.",
+      "Isolation Forest flagged an anomaly (score=-0.03190661582717069, severity=0.9296662971126549).",
+      "Correlation residual between Paid and Allowed is 1.1368683772161603e-12 (flag=False).",
+      "Quantity Dispensed vs Days Supply residual is 15.10769824441359 (flag=False)."
     ],
     "possible_causes": [
       "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
       "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+      "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
     ],
     "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
     "recommended_actions": [
@@ -182,228 +128,51 @@
   },
   {
     "priority": "HIGH",
-    "record_id": "TEST_0066",
-    "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.08018791583894136 and severity 0.9556465613828423. Correlation analysis did not classify the record as anomalous, although the residual was -0.19249700810769355. Z-score and IQR statistical checks did not detect an anomaly.",
+    "record_id": "TEST_0040",
+    "anomaly_type": "Medical Claim Multivariate Anomaly",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.023000187941899286 and severity 0.8334469063010992. Correlation analysis did not classify the record as anomalous, although the residual was 4.547473508864641e-13. Z-score and IQR statistical checks did not detect an anomaly.",
     "observed_facts": [
-      "The record is a PHARMACY_CLAIM with ID TEST_0066.",
-      "The provider NPI is 1000000066.0.",
-      "The beneficiary ID is -10000010000066.",
-      "Financial parameters: Billed=$3275.0, Paid=$2305.6, Allowed=$2620.0.",
-      "Supply parameters: Quantity Dispensed=30.0, Days Supply=30.0.",
-      "Isolation Forest flagged an anomaly (score=-0.08018791583894136, severity=0.9556465613828423).",
-      "Correlation residual between Paid and Allowed is -0.19249700810769355 (flag=False).",
-      "Quantity Dispensed vs Days Supply residual is 0.0 (flag=False)."
+      "The record is a MEDICAL_CLAIM with ID TEST_0040.",
+      "The provider NPI is 1467444286.0.",
+      "The beneficiary ID is -10000020000039.",
+      "Financial parameters: Billed=$2658.87, Paid=$2135.64, Allowed=$2135.64.",
+      "Isolation Forest flagged an anomaly (score=-0.023000187941899286, severity=0.8334469063010992).",
+      "Correlation residual between Paid and Allowed is 4.547473508864641e-13 (flag=False)."
     ],
     "possible_causes": [
       "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+      "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
       "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
     ],
     "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
     "recommended_actions": [
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0068",
-    "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.0007299847254801373 and severity 0.5100470586898717. Correlation analysis did not classify the record as anomalous, although the residual was 0.23387301856791964. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PHARMACY_CLAIM with ID TEST_0068.",
-      "The provider NPI is 1000000068.0.",
-      "The beneficiary ID is -10000010000068.",
-      "Financial parameters: Billed=$3350.0, Paid=$2358.4, Allowed=$2680.0.",
-      "Supply parameters: Quantity Dispensed=30.0, Days Supply=30.0.",
-      "Isolation Forest flagged an anomaly (score=-0.0007299847254801373, severity=0.5100470586898717).",
-      "Correlation residual between Paid and Allowed is 0.23387301856791964 (flag=False).",
-      "Quantity Dispensed vs Days Supply residual is 0.0 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
-    ],
-    "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0069",
-    "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.03149706583153933 and severity 0.6825886268889919. Correlation analysis did not classify the record as anomalous, although the residual was 0.44705803190572624. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PHARMACY_CLAIM with ID TEST_0069.",
-      "The provider NPI is 1000000069.0.",
-      "The beneficiary ID is -10000010000069.",
-      "Financial parameters: Billed=$3387.5, Paid=$2384.8, Allowed=$2710.0.",
-      "Supply parameters: Quantity Dispensed=30.0, Days Supply=30.0.",
-      "Isolation Forest flagged an anomaly (score=-0.03149706583153933, severity=0.6825886268889919).",
-      "Correlation residual between Paid and Allowed is 0.44705803190572624 (flag=False).",
-      "Quantity Dispensed vs Days Supply residual is 0.0 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
-    ],
-    "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0077",
-    "anomaly_type": "Prior Auth Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.05629231604052298 and severity 0.6453976142485787. Correlation analysis did not classify the record as anomalous, although the residual was 2.152538138608179. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PRIOR_AUTH with ID TEST_0077.",
-      "The provider NPI is 1000000077.0.",
-      "The beneficiary ID is -10000010000077.",
-      "Financial parameters: Billed=$3687.5, Paid=$2596.0, Allowed=$2950.0.",
-      "Isolation Forest flagged an anomaly (score=-0.05629231604052298, severity=0.6453976142485787).",
-      "Correlation residual between Paid and Allowed is 2.152538138608179 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Invalid NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
-    ],
-    "likely_root_cause": "Insufficient evidence to determine root cause.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
       "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
       "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
     ]
   },
   {
     "priority": "MEDIUM",
-    "record_id": "TEST_0088",
-    "anomaly_type": "Prior Auth Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.0707404191778459 and severity 0.71667974593953. Correlation analysis did not classify the record as anomalous, although the residual was 4.4975732853240515. Z-score and IQR statistical checks did not detect an anomaly.",
+    "record_id": "TEST_0051",
+    "anomaly_type": "Correlation Anomaly",
+    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest did not flag an anomaly. Correlation analysis flagged an anomaly between Paid and Allowed amount with residual -1.0913936421275139e-11. Z-score and IQR statistical checks did not detect an anomaly.",
     "observed_facts": [
-      "The record is a PRIOR_AUTH with ID TEST_0088.",
-      "The provider NPI is 1000000088.0.",
-      "The beneficiary ID is -10000010000088.",
-      "Isolation Forest flagged an anomaly (score=-0.0707404191778459, severity=0.71667974593953).",
-      "Correlation residual between Paid and Allowed is 4.4975732853240515 (flag=False)."
+      "The record is a PRIOR_AUTH with ID TEST_0051.",
+      "The provider NPI is 1764818586.0.",
+      "The beneficiary ID is -10000020000050.",
+      "Financial parameters: Billed=$22787.93, Paid=$20964.9, Allowed=$20964.9.",
+      "Correlation residual between Paid and Allowed is -1.0913936421275139e-11 (flag=True)."
     ],
     "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Invalid NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+      "Domain precedent (Payment-allowed residual): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+      "Domain precedent (Paid exceeds allowed): adjudication, benefit calculation, contract pricing, payment processing, adjustment logic, or financial-field mapping defect.",
+      "Domain precedent (Negative allowed amount): adjudication, benefit calculation, contract pricing, payment processing, adjustment logic, or financial-field mapping defect."
     ],
     "likely_root_cause": "Insufficient evidence to determine root cause.",
     "recommended_actions": [
       "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0090",
-    "anomaly_type": "Prior Auth Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.02627792247428795 and severity 0.4973165869692542. Correlation analysis did not classify the record as anomalous, although the residual was 4.92394331199921. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PRIOR_AUTH with ID TEST_0090.",
-      "The beneficiary ID is -10000010000090.",
-      "Financial parameters: Billed=$4175.0, Paid=$2939.2, Allowed=$3340.0.",
-      "Isolation Forest flagged an anomaly (score=-0.02627792247428795, severity=0.4973165869692542).",
-      "Correlation residual between Paid and Allowed is 4.92394331199921 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Authorization decision timestamp anomaly): authorization workflow, linkage, effective dates, provider/member mapping, documentation, or SLA configuration problem."
-    ],
-    "likely_root_cause": "Insufficient evidence to determine root cause.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "reconcile claim and authorization systems, validate effective dates and scope, make required fields mandatory, and correct workflow linkage."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0093",
-    "anomaly_type": "Prior Auth Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.005358798116664398 and severity 0.3941085905183231. Correlation analysis did not classify the record as anomalous, although the residual was 5.56349835201263. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PRIOR_AUTH with ID TEST_0093.",
-      "The beneficiary ID is -10000010000093.",
-      "Financial parameters: Billed=$4287.5, Paid=$3018.4, Allowed=$3430.0.",
-      "Isolation Forest flagged an anomaly (score=-0.005358798116664398, severity=0.3941085905183231).",
-      "Correlation residual between Paid and Allowed is 5.56349835201263 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Invalid NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
-    ],
-    "likely_root_cause": "Insufficient evidence to determine root cause.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
-    ]
-  },
-  {
-    "priority": "MEDIUM",
-    "record_id": "TEST_0096",
-    "anomaly_type": "Prior Auth Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.004257957776847676 and severity 0.38867741070684875. Correlation analysis did not classify the record as anomalous, although the residual was 6.203053392026504. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PRIOR_AUTH with ID TEST_0096.",
-      "The beneficiary ID is -10000010000096.",
-      "Financial parameters: Billed=$4400.0, Paid=$3097.6, Allowed=$3520.0.",
-      "Isolation Forest flagged an anomaly (score=-0.004257957776847676, severity=0.38867741070684875).",
-      "Correlation residual between Paid and Allowed is 6.203053392026504 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Authorization decision timestamp anomaly): authorization workflow, linkage, effective dates, provider/member mapping, documentation, or SLA configuration problem."
-    ],
-    "likely_root_cause": "Insufficient evidence to determine root cause.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "reconcile claim and authorization systems, validate effective dates and scope, make required fields mandatory, and correct workflow linkage."
-    ]
-  },
-  {
-    "priority": "HIGH",
-    "record_id": "TEST_0099",
-    "anomaly_type": "Prior Auth Multivariate Anomaly",
-    "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.1281663147628096 and severity 1.0. Correlation analysis did not classify the record as anomalous, although the residual was 6.842608432039924. Z-score and IQR statistical checks did not detect an anomaly.",
-    "observed_facts": [
-      "The record is a PRIOR_AUTH with ID TEST_0099.",
-      "The beneficiary ID is -10000010000099.",
-      "Financial parameters: Billed=$4512.5, Paid=$3176.8, Allowed=$3610.0.",
-      "Isolation Forest flagged an anomaly (score=-0.1281663147628096, severity=1.0).",
-      "Correlation residual between Paid and Allowed is 6.842608432039924 (flag=False)."
-    ],
-    "possible_causes": [
-      "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
-      "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
-      "Domain precedent (Invalid NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
-    ],
-    "likely_root_cause": "Insufficient evidence to determine root cause.",
-    "recommended_actions": [
-      "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
-      "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
+      "reconcile the financial fields, validate benefit and contract rules, correct the calculation or mapping, and re-adjudicate/reconcile when necessary.",
+      "reconcile the financial fields, validate benefit and contract rules, correct the calculation or mapping, and re-adjudicate/reconcile when necessary."
     ]
   }
 ]

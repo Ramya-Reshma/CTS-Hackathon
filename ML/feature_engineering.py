@@ -14,7 +14,19 @@ def run_feature_engineering(df):
     
     
     print("Loaded shape:", df.shape)
-    
+
+    # Drop pre-existing engineered columns to prevent merge collisions (_x, _y)
+    cols_to_drop = [
+        'Provider_Total_Records', 'Provider_Denied_Records', 'Provider_Denial_Rate',
+        'Batch_Volume', 'Rolling_7D_Avg_Volume', 'Volume_Vs_Trend_Ratio',
+        'Batch_SLA_Breach_Rate', 'Rolling_7D_Avg_SLA_Breach_Rate', 'SLA_Breach_Rate_Vs_Trend_Diff',
+        'Beneficiary_Record_Count', 'High_Frequency_Beneficiary_Flag',
+        'Missing_Required_Auth_Link', 'Days_Since_Prev_Batch', 'Pipeline_Gap_Flag',
+        'Submission_Day_Of_Week', 'DOW_Avg_SLA_Breach_Rate', 'Record_SLA_Breach_Numeric',
+        'SLA_Breach_Vs_DOW_Norm'
+    ]
+    df = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
+
     # ---- 3. Parse date columns ----
     date_cols = ['Service_Date', 'Service_End_Date', 'Submission_Date',
                  'Processed_Date', 'Decision_Date', 'Ingestion_Timestamp']

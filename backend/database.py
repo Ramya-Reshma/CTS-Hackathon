@@ -57,19 +57,38 @@ def init_db():
 
 def _ensure_schema_updates():
     """Apply lightweight additive schema updates for SQLite deployments."""
-    required_columns = {
+    anomaly_columns = {
+        "dataset_id": "VARCHAR(64)",
         "observed_facts": "JSON",
         "possible_causes": "JSON",
         "evidence": "JSON",
         "anomaly_signals": "JSON",
     }
 
-    with engine.begin() as conn:
-        rows = conn.execute(text("PRAGMA table_info(anomaly_results)")).fetchall()
-        existing = {row[1] for row in rows}
+    run_columns = {
+        "dataset_id": "VARCHAR(64)",
+        "report_dir": "VARCHAR(512)",
+        "sla_summary": "JSON",
+        "quality_summary": "JSON",
+    }
 
-        for column_name, column_type in required_columns.items():
-            if column_name not in existing:
-                conn.execute(
-                    text(f"ALTER TABLE anomaly_results ADD COLUMN {column_name} {column_type}")
-                )
+    with engine.begin() as conn:
+        # Check anomaly_results
+        try:
+            rows = conn.execute(text("PRAGMA table_info(anomaly_results)")).fetchall()
+            existing = {row[1] for row in rows}
+            for col_name, col_type in anomaly_columns.items():
+                if col_name not in existing:
+                    conn.execute(text(f"ALTER TABLE anomaly_results ADD COLUMN {col_name} {col_type}"))
+        except Exception as e:
+            print(f"[DB] Note on anomaly_results migration: {e}")
+
+        # Check analysis_runs
+        try:
+            rows = conn.execute(text("PRAGMA table_info(analysis_runs)")).fetchall()
+            existing = {row[1] for row in rows}
+            for col_name, col_type in run_columns.items():
+                if col_name not in existing:
+                    conn.execute(text(f"ALTER TABLE analysis_runs ADD COLUMN {col_name} {col_type}"))
+        except Exception as e:
+            print(f"[DB] Note on analysis_runs migration: {e}")

@@ -1,0 +1,27 @@
+{
+  "priority": "MEDIUM",
+  "record_id": "PH200066",
+  "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.03366644976114397 and severity 0.5881895332421057. Correlation analysis did not classify the record as anomalous, although the residual was -14.018908966082336. Z-score and IQR statistical checks did not detect an anomaly.",
+  "observed_facts": [
+    "The record is a PHARMACY_CLAIM with ID PH200066.",
+    "The provider NPI is 1672095978.0.",
+    "The beneficiary ID is -10000010276561.0.",
+    "Financial parameters: Billed=$466.57, Paid=$333.81, Allowed=$333.81.",
+    "Supply parameters: Quantity Dispensed=27.0, Days Supply=30.0.",
+    "Isolation Forest flagged an anomaly (score=-0.03366644976114397, severity=0.5881895332421057).",
+    "Correlation residual between Paid and Allowed is -14.018908966082336 (flag=False).",
+    "Quantity Dispensed vs Days Supply residual is -7.440000341562154 (flag=False)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Multivariate pharmacy anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+  ],
+  "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+  "recommended_actions": [
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
+  ]
+}

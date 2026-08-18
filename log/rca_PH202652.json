@@ -1,0 +1,27 @@
+{
+  "priority": "MEDIUM",
+  "record_id": "PH202652",
+  "anomaly_type": "Pharmacy Claim Multivariate Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.021801979569158858 and severity 0.5441725214854473. Correlation analysis did not classify the record as anomalous, although the residual was -9.550658086808198. Statistical checks identified outliers in Allowed_Amount, Paid_Amount.",
+  "observed_facts": [
+    "The record is a PHARMACY_CLAIM with ID PH202652.",
+    "The provider NPI is 1967265298.0.",
+    "The beneficiary ID is -10000010265499.0.",
+    "Financial parameters: Billed=$1679.24, Paid=$1446.88, Allowed=$1446.88.",
+    "Supply parameters: Quantity Dispensed=86.0, Days Supply=90.0.",
+    "Isolation Forest flagged an anomaly (score=-0.021801979569158858, severity=0.5441725214854473).",
+    "Correlation residual between Paid and Allowed is -9.550658086808198 (flag=False).",
+    "Quantity Dispensed vs Days Supply residual is -17.7393670416767 (flag=False)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Extreme allowed amount): adjudication, benefit calculation, contract pricing, payment processing, adjustment logic, or financial-field mapping defect.",
+    "Domain precedent (Negative allowed amount): adjudication, benefit calculation, contract pricing, payment processing, adjustment logic, or financial-field mapping defect."
+  ],
+  "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+  "recommended_actions": [
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "reconcile the financial fields, validate benefit and contract rules, correct the calculation or mapping, and re-adjudicate/reconcile when necessary.",
+    "reconcile the financial fields, validate benefit and contract rules, correct the calculation or mapping, and re-adjudicate/reconcile when necessary."
+  ]
+}

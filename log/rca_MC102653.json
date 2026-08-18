@@ -1,0 +1,25 @@
+{
+  "priority": "MEDIUM",
+  "record_id": "MC102653",
+  "anomaly_type": "Medical Claim Multivariate Anomaly",
+  "root_cause": "The record was flagged with an ML anomaly signal count of 1. Isolation Forest flagged the record as anomalous with raw score -0.007703936528466904 and severity 0.7196190441637363. Correlation analysis did not classify the record as anomalous, although the residual was -8.171287800458458. Z-score and IQR statistical checks did not detect an anomaly.",
+  "observed_facts": [
+    "The record is a MEDICAL_CLAIM with ID MC102653.",
+    "The provider NPI is 1881836195.0.",
+    "The beneficiary ID is -10000010257589.0.",
+    "Financial parameters: Billed=$2238.12, Paid=$1790.49, Allowed=$1790.49.",
+    "Isolation Forest flagged an anomaly (score=-0.007703936528466904, severity=0.7196190441637363).",
+    "Correlation residual between Paid and Allowed is -8.171287800458458 (flag=False)."
+  ],
+  "possible_causes": [
+    "Domain precedent (Isolation Forest anomaly): unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+    "Domain precedent (Inactive NDC): source extraction, field mapping, validation, encoding, or master-data synchronization failure.",
+    "Domain precedent (Invalid claim status): source extraction, field mapping, validation, encoding, or master-data synchronization failure."
+  ],
+  "likely_root_cause": "unusual relationship or multivariate feature combination learned by the anomaly model; it may represent true rare behavior or a data-quality issue.",
+  "recommended_actions": [
+    "inspect contributing features, peer context and deterministic rules, validate the source record, and retain the evidence used for escalation.",
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess.",
+    "validate the field against the source and master data, correct the mapping or source value, quarantine invalid records, and reprocess."
+  ]
+}

@@ -1,195 +1,195 @@
 {
   "method": "Domain-Partitioned IsolationForest(n_estimators=200, contamination='auto', random_state=42) with median/most-frequent imputation, standard scaling, and one-hot encoding (max_categories=30).",
   "features_per_domain": {
-    "MEDICAL_CLAIM": 48,
-    "PHARMACY_CLAIM": 43,
-    "PRIOR_AUTH": 40
+    "MEDICAL_CLAIM": 51,
+    "PHARMACY_CLAIM": 47,
+    "PRIOR_AUTH": 37
   },
   "summary": {
-    "total_records_scanned": 10000,
-    "isolation_forest_flagged_count": 745,
-    "isolation_forest_flagged_pct": 7.45
+    "total_records_scanned": 100,
+    "isolation_forest_flagged_count": 10,
+    "isolation_forest_flagged_pct": 10.0
   },
   "top_20_highest_severity_records": [
     {
-      "Record_ID": "PH201432",
-      "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-10000010275879.0",
-      "Provider_NPI": "1787233815.0",
+      "Record_ID": "TEST_0022",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000020000021",
+      "Provider_NPI": "1412518387.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.14466701096706058,
+      "ISO_Raw_Score": -0.053085696051251796,
       "ISO_Severity_0to1": 1.0
     },
     {
-      "Record_ID": "MC101289",
-      "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000010257320.0",
-      "Provider_NPI": "1801898556.0",
+      "Record_ID": "TEST_0068",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000020000067",
+      "Provider_NPI": "1896947699.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.07552724809976297,
+      "ISO_Raw_Score": -0.04469539625520513,
       "ISO_Severity_0to1": 1.0
     },
     {
-      "Record_ID": "PA300081",
+      "Record_ID": "TEST_0060",
       "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010256715.0",
-      "Provider_NPI": "1502049183.0",
+      "BENE_ID": "-10000020000059",
+      "Provider_NPI": "1067569493.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.08240106093677013,
+      "ISO_Raw_Score": -0.08673803481908993,
       "ISO_Severity_0to1": 1.0
     },
     {
-      "Record_ID": "MC100447",
-      "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000010257256.0",
-      "Provider_NPI": "1821232869.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.07472881161238054,
-      "ISO_Severity_0to1": 0.9966992707917026
-    },
-    {
-      "Record_ID": "MC101667",
-      "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000010255239.0",
-      "Provider_NPI": "1336255264.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.06654850839974347,
-      "ISO_Severity_0to1": 0.9628819713904694
-    },
-    {
-      "Record_ID": "PA301158_DUP",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010259120.0",
-      "Provider_NPI": "1845678368.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.07398692502516258,
-      "ISO_Severity_0to1": 0.9547962377258016
-    },
-    {
-      "Record_ID": "PA301158",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010259120.0",
-      "Provider_NPI": "1845678368.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.07398692502516258,
-      "ISO_Severity_0to1": 0.9547962377258016
-    },
-    {
-      "Record_ID": "PA300147",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010260325.0",
-      "Provider_NPI": "1216219100.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.07328667163840896,
-      "ISO_Severity_0to1": 0.9510342248513904
-    },
-    {
-      "Record_ID": "PH202804",
+      "Record_ID": "TEST_0035",
       "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-10000010255493.0",
-      "Provider_NPI": "1912368008.0",
+      "BENE_ID": "-10000020000034",
+      "Provider_NPI": "1991447274.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.1308978356590933,
-      "ISO_Severity_0to1": 0.9489165599809324
+      "ISO_Raw_Score": -0.03708271010014674,
+      "ISO_Severity_0to1": 0.9581329580863893
     },
     {
-      "Record_ID": "PA301639_DUP",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010273270.0",
-      "Provider_NPI": "1993962280.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.0728652062284112,
-      "ISO_Severity_0to1": 0.9487699611883738
-    },
-    {
-      "Record_ID": "PA301639",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010273270.0",
-      "Provider_NPI": "1993962280.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.0728652062284112,
-      "ISO_Severity_0to1": 0.9487699611883738
-    },
-    {
-      "Record_ID": "MC103241",
-      "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000010262980.0",
-      "Provider_NPI": "1841756749.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.05810468982962791,
-      "ISO_Severity_0to1": 0.9279753018877824
-    },
-    {
-      "Record_ID": "PA301059",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010259830.0",
-      "Provider_NPI": "1461244432.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.06779822297918325,
-      "ISO_Severity_0to1": 0.9215483060295275
-    },
-    {
-      "Record_ID": "PA300327",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-97998774296.0",
-      "Provider_NPI": "1978215720.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.06681287200233699,
-      "ISO_Severity_0to1": 0.916254646433114
-    },
-    {
-      "Record_ID": "PH200173",
+      "Record_ID": "TEST_0038",
       "Record_Type": "PHARMACY_CLAIM",
-      "BENE_ID": "-10000010258986.0",
-      "Provider_NPI": "1870248593.0",
+      "BENE_ID": "-10000020000037",
+      "Provider_NPI": "1428581204.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.11675489487305801,
-      "ISO_Severity_0to1": 0.8964464554773887
+      "ISO_Raw_Score": -0.03190661582717069,
+      "ISO_Severity_0to1": 0.9296662971126549
     },
     {
-      "Record_ID": "MC101134",
+      "Record_ID": "TEST_0018",
+      "Record_Type": "PRIOR_AUTH",
+      "BENE_ID": "-10000020000017",
+      "Provider_NPI": "1690618898.0",
+      "ISO_Is_Anomaly": true,
+      "ISO_Raw_Score": -0.06616446933222364,
+      "ISO_Severity_0to1": 0.9082083124893615
+    },
+    {
+      "Record_ID": "TEST_0053",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000020000052",
+      "Provider_NPI": "1196426409.0",
+      "ISO_Is_Anomaly": true,
+      "ISO_Raw_Score": -0.018658275602466246,
+      "ISO_Severity_0to1": 0.8568051802643114
+    },
+    {
+      "Record_ID": "TEST_0100",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000010256714.0",
-      "Provider_NPI": "1326133216.0",
+      "BENE_ID": "-10000020000099",
+      "Provider_NPI": "1930495497.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.04963150009206996,
-      "ISO_Severity_0to1": 0.8929472122448704
+      "ISO_Raw_Score": -0.02311755567667495,
+      "ISO_Severity_0to1": 0.8340966529916409
     },
     {
-      "Record_ID": "MC102499",
+      "Record_ID": "TEST_0040",
       "Record_Type": "MEDICAL_CLAIM",
-      "BENE_ID": "-10000010264958.0",
-      "Provider_NPI": "1386952034.0",
+      "BENE_ID": "-10000020000039",
+      "Provider_NPI": "1467444286.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.04882403309449501,
-      "ISO_Severity_0to1": 0.8896091509892162
+      "ISO_Raw_Score": -0.023000187941899286,
+      "ISO_Severity_0to1": 0.8334469063010992
     },
     {
-      "Record_ID": "PA300547",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010280514.0",
-      "Provider_NPI": "1926277033.0",
+      "Record_ID": "TEST_0013",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000020000012",
+      "Provider_NPI": "1713165214.0",
       "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.061520572538612095,
-      "ISO_Severity_0to1": 0.8878225115882205
+      "ISO_Raw_Score": -0.008919088000427178,
+      "ISO_Severity_0to1": 0.7554940676981661
     },
     {
-      "Record_ID": "PA300637",
-      "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010257728.0",
-      "Provider_NPI": "1988783281.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.060596500692017274,
-      "ISO_Severity_0to1": 0.8828580655040864
+      "Record_ID": "TEST_0050",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000020000049",
+      "Provider_NPI": "1519315139.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.011354756396152965,
+      "ISO_Severity_0to1": 0.6917442749482834
     },
     {
-      "Record_ID": "PA301026_DUP",
+      "Record_ID": "TEST_0098",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000020000097",
+      "Provider_NPI": "1703165430.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.01172075760303537,
+      "ISO_Severity_0to1": 0.6897313996560587
+    },
+    {
+      "Record_ID": "TEST_0062",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000020000061",
+      "Provider_NPI": "1341302751.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.018834668636982077,
+      "ISO_Severity_0to1": 0.6506074419148032
+    },
+    {
+      "Record_ID": "TEST_0052",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000020000051",
+      "Provider_NPI": "1944415458.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.01699404970621382,
+      "ISO_Severity_0to1": 0.6120391778289458
+    },
+    {
+      "Record_ID": "TEST_0016",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000020000015",
+      "Provider_NPI": "1890884503.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.021466157676098663,
+      "ISO_Severity_0to1": 0.5872816296089678
+    },
+    {
+      "Record_ID": "TEST_0006",
       "Record_Type": "PRIOR_AUTH",
-      "BENE_ID": "-10000010266978.0",
-      "Provider_NPI": "1949306366.0",
-      "ISO_Is_Anomaly": true,
-      "ISO_Raw_Score": -0.05939553119598584,
-      "ISO_Severity_0to1": 0.8764060257263266
+      "BENE_ID": "-10000020000005",
+      "Provider_NPI": "1399848762.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.011422997811260771,
+      "ISO_Severity_0to1": 0.5620415509077041
+    },
+    {
+      "Record_ID": "TEST_0048",
+      "Record_Type": "PRIOR_AUTH",
+      "BENE_ID": "-10000020000047",
+      "Provider_NPI": "1141229849.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.02234943295409636,
+      "ISO_Severity_0to1": 0.5132918132466902
+    },
+    {
+      "Record_ID": "TEST_0097",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000020000096",
+      "Provider_NPI": "1426221881.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.04174541222225714,
+      "ISO_Severity_0to1": 0.4750158646335634
+    },
+    {
+      "Record_ID": "TEST_0014",
+      "Record_Type": "PHARMACY_CLAIM",
+      "BENE_ID": "-10000020000013",
+      "Provider_NPI": "1594591482.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.050925989805124194,
+      "ISO_Severity_0to1": 0.4741166919950801
+    },
+    {
+      "Record_ID": "TEST_0019",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000020000018",
+      "Provider_NPI": "1416012813.0",
+      "ISO_Is_Anomaly": false,
+      "ISO_Raw_Score": 0.05018184236430756,
+      "ISO_Severity_0to1": 0.428311865657513
     }
   ]
 }
