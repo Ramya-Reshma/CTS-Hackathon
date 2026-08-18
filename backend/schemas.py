@@ -58,6 +58,7 @@ class SeveritySummary(BaseModel):
 class AnalysisRunBase(BaseModel):
     """Base fields for analysis run."""
     filename: str
+    dataset_id: Optional[str] = None
     total_records: int = 0
     anomaly_count: int = 0
 
@@ -65,6 +66,7 @@ class AnalysisRunBase(BaseModel):
 class AnalysisRunResponse(AnalysisRunBase):
     """Response schema for analysis run."""
     id: str
+    dataset_id: Optional[str] = None
     created_at: datetime
     processing_status: str
     severity_summary: SeveritySummary
@@ -72,6 +74,17 @@ class AnalysisRunResponse(AnalysisRunBase):
 
     class Config:
         from_attributes = True
+
+
+class DatasetResponse(BaseModel):
+    """Response schema for an uploaded dataset."""
+    dataset_id: str
+    filename: str
+    row_count: int
+    file_size_bytes: int
+    status: str
+    schema_info: Optional[List[str]] = None
+    created_at: Optional[str] = None
 
 
 # ============================================================================
@@ -87,6 +100,7 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     """Response after analysis starts/completes."""
     run_id: str
+    dataset_id: Optional[str] = None
     status: str  # pending, processing, completed, failed
     filename: str
     total_records: int

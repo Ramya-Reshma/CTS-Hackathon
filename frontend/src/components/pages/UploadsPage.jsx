@@ -89,6 +89,7 @@ export default function UploadsPage({ onNavigateToOverview }) {
         const runPayload = {
           id: result.run_id,
           run_id: result.run_id,
+          dataset_id: result.dataset_id,
           filename: result.filename || selectedFile.name,
           total_records: result.total_records,
           anomaly_count: result.total_anomalies,
@@ -121,6 +122,7 @@ export default function UploadsPage({ onNavigateToOverview }) {
     const runPayload = {
       id: run.id,
       run_id: run.id,
+      dataset_id: run.dataset_id,
       filename: run.filename,
       total_records: run.total_records,
       anomaly_count: run.anomaly_count,

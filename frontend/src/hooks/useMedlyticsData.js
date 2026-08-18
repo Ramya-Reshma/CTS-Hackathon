@@ -1,4 +1,4 @@
-﻿/**
+/**
  * useMedlyticsData.js
  * 
  * Shared data hook for all MEDLYTICS pages.
@@ -18,11 +18,18 @@ export function useMedlyticsData() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!currentRun) return
+    if (!currentRun?.run_id) {
+      setAnomalies([])
+      setStatistics(null)
+      setIsLoading(false)
+      return
+    }
 
     const load = async () => {
       setIsLoading(true)
       setError(null)
+      setAnomalies([])
+      setStatistics(null)
       try {
         const [anomalyResult, runInfo] = await Promise.all([
           getAnomalies(currentRun.run_id, { page: 1, pageSize: 200 }),
