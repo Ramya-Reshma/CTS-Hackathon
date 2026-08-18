@@ -66,67 +66,71 @@ export default function SLARiskPage() {
     )
   }
 
-  // --- Population Level Metrics ---
+  // --- Population Level Metrics (Directly consumed from authoritative backend SLA summary) ---
   const slaSummary = statistics?.sla_summary || null
   const totalRecords = slaSummary?.total_records ?? currentRun?.total_records ?? statistics?.total_records ?? 0
-  const assessableCount = slaSummary?.records_assessable ?? (totalRecords - (slaSummary?.records_not_assessable ?? 0))
-  const notAssessableCount = slaSummary?.records_not_assessable ?? 0
-  const rawBreachedCount = slaSummary?.records_breached ?? anomalies.filter(a => {
-    const fr = a.full_record || {}
-    return fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
-  }).length
-  // Cap breached count to never exceed totalRecords (guards against stale DB aggregate)
-  const breachedCount = totalRecords > 0 ? Math.min(rawBreachedCount, totalRecords) : rawBreachedCount
-  const atRiskCount = slaSummary?.records_at_risk ?? 0
-  const onTrackCount = slaSummary?.records_normal ?? Math.max(0, assessableCount - breachedCount - atRiskCount)
+  const notAssessableCount = slaSummary?.records_not_assessable ?? slaSummary?.not_assessable ?? 0
+  const assessableCount = slaSummary?.records_assessable ?? (totalRecords - notAssessableCount)
+  const breachedCount = slaSummary?.records_breached ?? slaSummary?.breached ?? 0
+  const atRiskCount = slaSummary?.records_at_risk ?? slaSummary?.at_risk ?? 0
+  const onTrackCount = slaSummary?.on_track ?? slaSummary?.records_normal ?? 0
+
+  const breachBreakdown = slaSummary?.breach_breakdown || {
+    time_based: 0,
+    service_payment_based: 0,
+    pending_outcome: 0,
+  }
 
   const complianceRate = assessableCount > 0 ? ((onTrackCount / assessableCount) * 100).toFixed(1) : '100.0'
   const breachRate = assessableCount > 0 ? ((breachedCount / assessableCount) * 100).toFixed(2) : '0.00'
 
-  // --- Interactive Charts Data ---
+  // --- Interactive Charts Data (Authoritative Backend Metrics) ---
   const slaComplianceChartData = [
     { label: 'Within SLA (Compliant)', value: onTrackCount, color: '#16a34a' },
-    { label: 'SLA Breached (>2.0 Days)', value: breachedCount, color: '#dc2626' },
-    { label: 'At Risk (Near Target)', value: atRiskCount, color: '#f59e0b' },
+    { label: 'SLA Breached (> SLA Target)', value: breachedCount, color: '#dc2626' },
+    { label: 'At Risk (Elevated Latency)', value: atRiskCount, color: '#f59e0b' },
   ]
 
   const latencyDistributionData = [
-    { label: 'Fast Resolution (< 1.0 Day)', value: Math.round(onTrackCount * 0.65), color: '#16a34a', sublabel: 'Immediate clearance' },
-    { label: 'Standard Latency (1.0 – 2.0 Days)', value: Math.round(onTrackCount * 0.35), color: '#2563eb', sublabel: 'Within contractual target' },
-    { label: 'Warning Latency (2.0 – 3.0 Days)', value: atRiskCount > 0 ? atRiskCount : 2, color: '#f59e0b', sublabel: 'Supervisor escalation' },
-    { label: 'Breached Latency (> 3.0 Days)', value: breachedCount, color: '#dc2626', sublabel: 'SLA penalty exposure' },
+    { label: 'On Track (Within SLA)', value: onTrackCount, color: '#16a34a', sublabel: 'Compliant resolution' },
+    { label: 'Warning Latency (At Risk)', value: atRiskCount, color: '#f59e0b', sublabel: 'Supervisor escalation' },
+    { label: 'Breached Latency (> SLA Target)', value: breachedCount, color: '#dc2626', sublabel: 'SLA penalty exposure' },
+    { label: 'Not Assessable (Missing Data)', value: notAssessableCount, color: '#6b7280', sublabel: 'Incomplete temporal metrics' },
   ]
 
   // --- Selected Individual Record Data ---
   const full = selectedRecord?.full_record || {}
   const validity = full.Temporal_Validity || full.temporal_validity
-  const isNotAssessable = validity === 'NEGATIVE' || validity === 'NOT_ASSESSABLE' || validity === 'NULL_NO_DATE' || full.SLA_Breach === 'NOT_ASSESSABLE'
+  const isNotAssessable = validity === 'NEGATIVE' || validity === 'NOT_ASSESSABLE' || validity === 'NULL_NO_DATE' || full.SLA_Breach === 'NOT_ASSESSABLE' || full.SLA_Status === 'NOT_ASSESSABLE'
 
   const slaApplicable = isNotAssessable ? 'Not Assessable' : (full.SLA_Applicable !== false ? 'Yes' : 'No')
   const slaTarget = full.SLA_Target_Days != null ? `${full.SLA_Target_Days} Days` : (full.sla_target_days != null ? `${full.sla_target_days} Days` : '2.0 Days')
   const processingLatency = full.Processing_Latency_Days != null ? `${full.Processing_Latency_Days} Days` : (full.processing_latency_days != null ? `${full.processing_latency_days} Days` : '1.2 Days')
   const slaUtilization = full.SLA_Utilization != null ? `${(Number(full.SLA_Utilization) * 100).toFixed(1)}%` : (full.sla_utilization != null ? `${(Number(full.sla_utilization) * 100).toFixed(1)}%` : '60.0%')
-  const slaStatus = full.SLA_Status || full.status || (full.SLA_Breach === true || full.sla_breach === true ? 'BREACHED' : (isNotAssessable ? 'NOT_ASSESSABLE' : 'ON TRACK'))
-  const riskLevel = full.SLA_Risk || full.sla_risk || (slaStatus === 'BREACHED' ? 'High Exposure' : (isNotAssessable ? 'None' : 'LOW'))
+  const rawStatus = full.SLA_Status || full.sla_status || full.status
+  const slaStatus = isNotAssessable ? 'NOT_ASSESSABLE' : (rawStatus === 'BREACHED' || full.Is_Breached === true || full.SLA_Breach === true || full.sla_breach === true ? 'BREACHED' : rawStatus === 'AT_RISK' ? 'AT_RISK' : 'ON_TRACK')
+  const riskLevel = full.SLA_Risk || full.sla_risk || (slaStatus === 'BREACHED' ? 'High Exposure' : (isNotAssessable ? 'None' : (slaStatus === 'AT_RISK' ? 'Medium' : 'LOW')))
   const riskScore = full.Record_SLA_Breach_Numeric != null ? fmtNum(full.Record_SLA_Breach_Numeric, 2) : (slaStatus === 'BREACHED' ? '1.00' : '0.00')
 
-  const slaBreached = (full.SLA_Breach === true || full.sla_breach === true || slaStatus === 'BREACHED')
+  const recordBreachCategories = full.Breach_Categories || full.breach_categories || (slaStatus === 'BREACHED' ? ['TIME_BASED'] : [])
+  const recordBreachReasons = full.Breach_Reasons || full.breach_reasons || (full.SLA_Reason ? [full.SLA_Reason] : [])
+
+  const slaBreached = (slaStatus === 'BREACHED')
     ? 'Yes'
     : (isNotAssessable ? 'Not Assessable' : 'No')
 
   const breachRiskDescription = slaStatus === 'BREACHED'
     ? 'Confirmed SLA Breach'
-    : full.SLA_Risk === 'HIGH'
-      ? 'High Exposure'
-      : full.SLA_Risk === 'MEDIUM'
-        ? 'Moderate Exposure'
-        : 'Low Risk'
+    : slaStatus === 'AT_RISK' || full.SLA_Risk === 'HIGH' || full.SLA_Risk === 'MEDIUM'
+      ? 'Elevated Turnaround Exposure'
+      : 'Within Operational Tolerances'
 
   // Breached / At Risk List
   const breachList = anomalies.filter(a => {
     const fr = a.full_record || {}
-    const isBr = fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
-    const isRisk = fr.SLA_Risk === 'HIGH' || fr.SLA_Risk === 'MEDIUM'
+    const st = fr.SLA_Status || fr.sla_status || fr.status
+    const isBr = st === 'BREACHED' || fr.Is_Breached === true || fr.SLA_Breach === true || fr.sla_breach === true
+    const isRisk = st === 'AT_RISK' || fr.SLA_Risk === 'HIGH' || fr.SLA_Risk === 'MEDIUM'
     if (tableFilter === 'BREACHED') return isBr
     if (tableFilter === 'AT_RISK') return isRisk
     return isBr || isRisk || true
@@ -173,11 +177,11 @@ export default function SLARiskPage() {
         </div>
       </div>
 
-      {/* 4 SLA Key Performance Cards */}
-      <div className="ml-kpi-grid">
+      {/* 6 SLA Primary Status & KPI Metric Cards */}
+      <div className="ml-kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">TOTAL PROCESSED</span>
+            <span className="ml-kpi-title">TOTAL RECORDS</span>
             <span className="ml-kpi-badge neutral">100% INGESTED</span>
           </div>
           <div className="ml-kpi-value">{totalRecords.toLocaleString()}</div>
@@ -189,11 +193,23 @@ export default function SLARiskPage() {
 
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">WITHIN SLA</span>
-            <span className="ml-kpi-badge success">{complianceRate}% COMPLIANT</span>
+            <span className="ml-kpi-title">ASSESSABLE</span>
+            <span className="ml-kpi-badge neutral">{assessableCount} / {totalRecords}</span>
+          </div>
+          <div className="ml-kpi-value">{assessableCount.toLocaleString()}</div>
+          <div className="ml-kpi-sub">Valid temporal dates &amp; targets</div>
+          <div className="ml-kpi-bar-bg">
+            <div className="ml-kpi-bar-fill fill-blue" style={{ width: `${totalRecords > 0 ? (assessableCount / totalRecords) * 100 : 100}%` }} />
+          </div>
+        </div>
+
+        <div className="ml-kpi-card">
+          <div className="ml-kpi-header">
+            <span className="ml-kpi-title">ON TRACK</span>
+            <span className="ml-kpi-badge success">{complianceRate}%</span>
           </div>
           <div className="ml-kpi-value success-text">{onTrackCount.toLocaleString()}</div>
-          <div className="ml-kpi-sub">Resolved within 2.0-day turnaround</div>
+          <div className="ml-kpi-sub">Resolved within SLA target</div>
           <div className="ml-kpi-bar-bg">
             <div className="ml-kpi-bar-fill fill-green" style={{ width: `${complianceRate}%` }} />
           </div>
@@ -201,7 +217,19 @@ export default function SLARiskPage() {
 
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">SLA BREACHES</span>
+            <span className="ml-kpi-title">AT RISK</span>
+            <span className={`ml-kpi-badge ${atRiskCount > 0 ? 'warning' : 'neutral'}`}>{atRiskCount} DETECTED</span>
+          </div>
+          <div className={`ml-kpi-value ${atRiskCount > 0 ? 'warning-text' : 'neutral-text'}`}>{atRiskCount.toLocaleString()}</div>
+          <div className="ml-kpi-sub">Warning latency / process drift</div>
+          <div className="ml-kpi-bar-bg">
+            <div className="ml-kpi-bar-fill fill-amber" style={{ width: `${totalRecords > 0 ? (atRiskCount / totalRecords) * 100 : 0}%` }} />
+          </div>
+        </div>
+
+        <div className="ml-kpi-card">
+          <div className="ml-kpi-header">
+            <span className="ml-kpi-title">BREACHED</span>
             <span className={`ml-kpi-badge ${breachedCount > 0 ? 'danger' : 'success'}`}>
               {breachedCount > 0 ? `${breachedCount} CONFIRMED` : 'ZERO BREACHES'}
             </span>
@@ -209,22 +237,67 @@ export default function SLARiskPage() {
           <div className={`ml-kpi-value ${breachedCount > 0 ? 'danger-text' : 'success-text'}`}>
             {breachedCount}
           </div>
-          <div className="ml-kpi-sub">{atRiskCount} additional records near threshold</div>
+          <div className="ml-kpi-sub">Breach rate: {breachRate}%</div>
           <div className="ml-kpi-bar-bg">
-            <div className="ml-kpi-bar-fill fill-red" style={{ width: `${Math.min(100, breachedCount * 20)}%` }} />
+            <div className="ml-kpi-bar-fill fill-red" style={{ width: `${Math.min(100, breachedCount * 12)}%` }} />
           </div>
         </div>
 
         <div className="ml-kpi-card">
           <div className="ml-kpi-header">
-            <span className="ml-kpi-title">COMPLIANCE RATE</span>
-            <span className="ml-kpi-badge neutral">BENCHMARK 98%</span>
+            <span className="ml-kpi-title">NOT ASSESSABLE</span>
+            <span className="ml-kpi-badge neutral">{notAssessableCount} RECORDS</span>
           </div>
-          <div className="ml-kpi-value success-text">{complianceRate}%</div>
-          <div className="ml-kpi-sub">Target SLA turnaround: 2.0 Business Days</div>
+          <div className="ml-kpi-value" style={{ color: 'var(--gray-500)' }}>{notAssessableCount}</div>
+          <div className="ml-kpi-sub">Incomplete date/target metrics</div>
           <div className="ml-kpi-bar-bg">
-            <div className="ml-kpi-bar-fill fill-green" style={{ width: `${complianceRate}%` }} />
+            <div className="ml-kpi-bar-fill" style={{ background: '#9ca3af', width: `${totalRecords > 0 ? (notAssessableCount / totalRecords) * 100 : 0}%` }} />
           </div>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* SECTION: EXACTLY THREE SLA BREACH CATEGORIES BREAKDOWN      */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="ml-section-label">Authoritative SLA Breach Categories Breakdown</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div className="ml-panel" style={{ padding: '16px 20px', borderLeft: '4px solid #dc2626' }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.8px' }}>
+            Category 1
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--navy-900)' }}>TIME-BASED</h3>
+            <span style={{ fontSize: '22px', fontWeight: 700, color: '#dc2626' }}>{breachBreakdown.time_based}</span>
+          </div>
+          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--gray-500)' }}>
+            Processing latency exceeded applicable SLA target.
+          </p>
+        </div>
+
+        <div className="ml-panel" style={{ padding: '16px 20px', borderLeft: '4px solid #2563eb' }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.8px' }}>
+            Category 2
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--navy-900)' }}>SERVICE/PAYMENT-BASED</h3>
+            <span style={{ fontSize: '22px', fontWeight: 700, color: '#2563eb' }}>{breachBreakdown.service_payment_based}</span>
+          </div>
+          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--gray-500)' }}>
+            Required service or payment outcome not completed within SLA condition.
+          </p>
+        </div>
+
+        <div className="ml-panel" style={{ padding: '16px 20px', borderLeft: '4px solid #7c3aed' }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 600, letterSpacing: '0.8px' }}>
+            Category 3
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--navy-900)' }}>PENDING-OUTCOME</h3>
+            <span style={{ fontSize: '22px', fontWeight: 700, color: '#7c3aed' }}>{breachBreakdown.pending_outcome}</span>
+          </div>
+          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--gray-500)' }}>
+            Required final outcome remained pending after SLA deadline.
+          </p>
         </div>
       </div>
 
@@ -470,10 +543,42 @@ export default function SLARiskPage() {
                       {slaBreached}
                     </span>
                   </div>
-                  <div className="ml-field-row" style={{ gridColumn: 'span 2' }}>
+                  <div className="ml-field-row">
                     <span className="ml-field-label">Breach Risk</span>
                     <span className="ml-field-value">{breachRiskDescription}</span>
                   </div>
+                  {slaStatus === 'BREACHED' && (
+                    <>
+                      <div className="ml-field-row" style={{ gridColumn: 'span 2' }}>
+                        <span className="ml-field-label">Breach Categories</span>
+                        <div className="ml-field-value" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {recordBreachCategories.length > 0 ? (
+                            recordBreachCategories.map((cat, i) => (
+                              <span key={i} className="ml-status-badge ml-status-breached" style={{ fontSize: '11px' }}>
+                                {cat.replace(/_/g, '-')}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="ml-status-badge ml-status-breached">TIME-BASED</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="ml-field-row" style={{ gridColumn: 'span 2' }}>
+                        <span className="ml-field-label">Breach Reasons</span>
+                        <div className="ml-field-value" style={{ fontSize: '12px', color: '#b91c1c' }}>
+                          {recordBreachReasons.length > 0 ? (
+                            <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                              {recordBreachReasons.map((rsn, idx) => (
+                                <li key={idx}>{rsn}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span>Latency exceeded applicable SLA target.</span>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

@@ -118,11 +118,16 @@ def compute_processing_integrity(report_json_path: Optional[str] = None) -> Dict
     
     # Stage 3: SLA Output
     sla_total = sla_summary.get("total_records", total_records)
-    sla_assessable = sla_summary.get("records_assessable", sum(1 for r in records if r.get("Temporal_Validity") != "NOT_ASSESSABLE"))
-    sla_breached = sla_summary.get("records_breached", sum(1 for r in records if bool(r.get("SLA_Breach")) or r.get("SLA_Status") == "BREACHED"))
-    sla_normal = sla_summary.get("records_normal", sum(1 for r in records if r.get("SLA_Status") == "NORMAL"))
-    sla_at_risk = sla_summary.get("records_at_risk", sum(1 for r in records if bool(r.get("SLA_Risk")) or r.get("SLA_Status") == "AT_RISK"))
-    sla_not_assessable = sla_summary.get("records_not_assessable", total_records - sla_assessable)
+    sla_assessable = sla_summary.get("records_assessable", sum(1 for r in records if r.get("Temporal_Validity") == "VALID" or r.get("SLA_Status") != "NOT_ASSESSABLE"))
+    sla_breached = sla_summary.get("records_breached", sla_summary.get("breached", sum(1 for r in records if bool(r.get("Is_Breached")) or bool(r.get("SLA_Breach")) or r.get("SLA_Status") == "BREACHED")))
+    sla_on_track = sla_summary.get("on_track", sla_summary.get("records_normal", sum(1 for r in records if r.get("SLA_Status") in ("ON_TRACK", "NORMAL"))))
+    sla_at_risk = sla_summary.get("records_at_risk", sla_summary.get("at_risk", sum(1 for r in records if r.get("SLA_Status") == "AT_RISK" or r.get("SLA_Risk") in ("HIGH", "MEDIUM"))))
+    sla_not_assessable = sla_summary.get("records_not_assessable", sla_summary.get("not_assessable", total_records - sla_assessable))
+    breach_breakdown = sla_summary.get("breach_breakdown", {
+        "time_based": sum(1 for r in records if "TIME_BASED" in r.get("Breach_Categories", [])),
+        "service_payment_based": sum(1 for r in records if "SERVICE_PAYMENT_BASED" in r.get("Breach_Categories", [])),
+        "pending_outcome": sum(1 for r in records if "PENDING_OUTCOME" in r.get("Breach_Categories", [])),
+    })
     missing_sla = 0 if sla_total >= total_records else (total_records - sla_total)
     
     stage3_status = "PASS" if (missing_sla == 0 and sla_total > 0) else "FAIL"
@@ -136,15 +141,17 @@ def compute_processing_integrity(report_json_path: Optional[str] = None) -> Dict
         "duplicate_results": 0,
         "assessable_records": sla_assessable,
         "breached": sla_breached,
-        "normal": sla_normal,
+        "normal": sla_on_track,
+        "on_track": sla_on_track,
         "at_risk": sla_at_risk,
         "not_assessable": sla_not_assessable,
+        "breach_breakdown": breach_breakdown,
         "checks": [
             {"name": "Record count preserved", "status": "PASS", "detail": f"{sla_total} / {total_records} SLA assessments generated"},
             {"name": "Record IDs preserved", "status": "PASS", "detail": "SLA findings correctly linked to Record_IDs"},
             {"name": "SLA result available for applicable records", "status": "PASS", "detail": f"{sla_assessable} assessable records evaluated"},
-            {"name": "SLA status available", "status": "PASS", "detail": "SLA status categories populated across population"},
-            {"name": "Breach status available", "status": "PASS", "detail": f"{sla_breached} breaches recorded by SLA engine"}
+            {"name": "SLA status available", "status": "PASS", "detail": f"On Track: {sla_on_track}, At Risk: {sla_at_risk}, Breached: {sla_breached}, Not Assessable: {sla_not_assessable}"},
+            {"name": "Breach status available", "status": "PASS", "detail": f"{sla_breached} breaches recorded (Time-Based: {breach_breakdown.get('time_based', 0)}, Service/Payment: {breach_breakdown.get('service_payment_based', 0)}, Pending-Outcome: {breach_breakdown.get('pending_outcome', 0)})"}
         ]
     }
     

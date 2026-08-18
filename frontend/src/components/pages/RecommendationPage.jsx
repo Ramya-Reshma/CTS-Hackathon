@@ -603,7 +603,7 @@ export default function RecommendationPage() {
 
   const full = selectedRecord?.full_record || {}
   const isAnomalous = full.ML_Is_Anomalous === true || full.ISO_Is_Anomaly === true || selectedRecord?.severity === 'HIGH' || selectedRecord?.severity === 'MEDIUM'
-  const slaStatus = full.SLA_Status ?? full.status ?? 'ON TRACK'
+  const slaStatus = full.SLA_Status ?? full.sla_status ?? full.status ?? 'ON_TRACK'
   const dqStatus = (statistics?.overall_data_quality_score ?? 88.8) >= 80 ? 'PASS' : 'WARNING'
   const evidenceList = Array.isArray(selectedRecord?.evidence) && selectedRecord.evidence.length > 0 ? selectedRecord.evidence : selectedRecord?.primary_signal ? [selectedRecord.primary_signal] : []
   const observedFacts = Array.isArray(selectedRecord?.observed_facts) ? selectedRecord.observed_facts : []

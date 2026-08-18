@@ -1105,11 +1105,17 @@ logger = logging.getLogger(__name__)
 # Sentinel values
 NOT_ASSESSABLE = "NOT_ASSESSABLE"
 
-# Status labels
-STATUS_NORMAL         = "NORMAL"
+# Primary SLA Status labels (Strictly ONE authoritative primary status per record)
+STATUS_ON_TRACK       = "ON_TRACK"
+STATUS_NORMAL         = "ON_TRACK"  # Alias for backward compatibility
 STATUS_AT_RISK        = "AT_RISK"
 STATUS_BREACHED       = "BREACHED"
 STATUS_NOT_ASSESSABLE = "NOT_ASSESSABLE"
+
+# Exactly Three SLA Breach Categories
+BREACH_CAT_TIME_BASED       = "TIME_BASED"
+BREACH_CAT_SERVICE_PAYMENT  = "SERVICE_PAYMENT_BASED"
+BREACH_CAT_PENDING_OUTCOME  = "PENDING_OUTCOME"
 
 # SLA risk levels
 RISK_LOW    = "LOW"
@@ -1132,14 +1138,19 @@ def determine_record_breach(
     temporal_validity: str,
     processing_latency_days: float | None,
     sla_target_days: float | None,
+    status_val: str | None = None,
 ) -> dict[str, Any]:
-    """Determine SLA breach status for a single record."""
-    # --- Data quality problems -> NOT_ASSESSABLE ----------------------------
+    """Determine SLA breach status and breach categories for a single record."""
+    # --- Data quality problems / missing temporal data -> NOT_ASSESSABLE ----
     if temporal_validity == "NEGATIVE":
         return {
-            "sla_breach":      NOT_ASSESSABLE,
-            "sla_utilization": None,
-            "status":          STATUS_NOT_ASSESSABLE,
+            "sla_breach":        NOT_ASSESSABLE,
+            "is_breached":       False,
+            "sla_status":        STATUS_NOT_ASSESSABLE,
+            "status":            STATUS_NOT_ASSESSABLE,
+            "sla_utilization":   None,
+            "breach_categories": [],
+            "breach_reasons":    [],
             "reason": (
                 f"Negative processing latency "
                 f"({processing_latency_days} days) indicates an invalid "
@@ -1151,9 +1162,13 @@ def determine_record_breach(
 
     if temporal_validity in ("NULL_NO_DATE", "MISSING_LATENCY"):
         return {
-            "sla_breach":      NOT_ASSESSABLE,
-            "sla_utilization": None,
-            "status":          STATUS_NOT_ASSESSABLE,
+            "sla_breach":        NOT_ASSESSABLE,
+            "is_breached":       False,
+            "sla_status":        STATUS_NOT_ASSESSABLE,
+            "status":            STATUS_NOT_ASSESSABLE,
+            "sla_utilization":   None,
+            "breach_categories": [],
+            "breach_reasons":    [],
             "reason": (
                 "No Processed_Date or Processing_Latency_Days available. "
                 "SLA assessment cannot be performed."
@@ -1163,31 +1178,89 @@ def determine_record_breach(
     # --- Valid temporal data -----------------------------------------------
     if sla_target_days is None or np.isnan(float(sla_target_days)):
         return {
-            "sla_breach":      NOT_ASSESSABLE,
-            "sla_utilization": None,
-            "status":          STATUS_NOT_ASSESSABLE,
+            "sla_breach":        NOT_ASSESSABLE,
+            "is_breached":       False,
+            "sla_status":        STATUS_NOT_ASSESSABLE,
+            "status":            STATUS_NOT_ASSESSABLE,
+            "sla_utilization":   None,
+            "breach_categories": [],
+            "breach_reasons":    [],
             "reason": "SLA_Target_Days is missing; cannot determine applicable SLA.",
         }
 
-    latency  = float(processing_latency_days)
-    target   = float(sla_target_days)
-    util     = round(latency / target, 4) if target > 0 else None
-
-    if latency > target:
+    if processing_latency_days is None or np.isnan(float(processing_latency_days)):
         return {
-            "sla_breach":      True,
-            "sla_utilization": util,
-            "status":          STATUS_BREACHED,
+            "sla_breach":        NOT_ASSESSABLE,
+            "is_breached":       False,
+            "sla_status":        STATUS_NOT_ASSESSABLE,
+            "status":            STATUS_NOT_ASSESSABLE,
+            "sla_utilization":   None,
+            "breach_categories": [],
+            "breach_reasons":    [],
+            "reason": "Processing_Latency_Days is missing; cannot determine applicable SLA.",
+        }
+
+    latency = float(processing_latency_days)
+    target  = float(sla_target_days)
+    util    = round(latency / target, 4) if target > 0 else None
+
+    # Evaluate against Exactly Three SLA Breach Categories
+    breach_categories: list[str] = []
+    breach_reasons: list[str] = []
+    clean_status = str(status_val or "").strip().upper()
+
+    # 1. TIME_BASED Breach: Actual Latency > SLA Target
+    if latency > target:
+        breach_categories.append(BREACH_CAT_TIME_BASED)
+        breach_reasons.append("LATENCY_EXCEEDED_SLA_TARGET")
+
+    # 2. SERVICE_PAYMENT_BASED Breach: Required service or payment outcome incomplete after deadline
+    service_pending_statuses = {"SERVICE_PENDING", "SERVICE_NOT_COMPLETED", "AWAITING_SERVICE", "SERVICE_FAILED"}
+    payment_pending_statuses = {"PAYMENT_PENDING", "PAYMENT_NOT_COMPLETED", "AWAITING_PAYMENT", "PAYMENT_FAILED"}
+
+    if clean_status in service_pending_statuses and latency > target:
+        if BREACH_CAT_SERVICE_PAYMENT not in breach_categories:
+            breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
+        breach_reasons.append("SERVICE_OUTCOME_NOT_COMPLETED")
+
+    if clean_status in payment_pending_statuses and latency > target:
+        if BREACH_CAT_SERVICE_PAYMENT not in breach_categories:
+            breach_categories.append(BREACH_CAT_SERVICE_PAYMENT)
+        breach_reasons.append("PAYMENT_OUTCOME_NOT_COMPLETED")
+
+    # 3. PENDING_OUTCOME Breach: Final outcome remains pending AFTER deadline
+    pending_outcome_statuses = {"PENDING", "IN_PROGRESS", "AWAITING_DECISION", "AWAITING_RESOLUTION"}
+    if clean_status in pending_outcome_statuses and latency > target:
+        if BREACH_CAT_PENDING_OUTCOME not in breach_categories:
+            breach_categories.append(BREACH_CAT_PENDING_OUTCOME)
+        breach_reasons.append("PENDING_OUTCOME_AFTER_DEADLINE")
+
+    is_breached = len(breach_categories) > 0
+
+    if is_breached:
+        return {
+            "sla_breach":        True,
+            "is_breached":       True,
+            "sla_status":        STATUS_BREACHED,
+            "status":            STATUS_BREACHED,
+            "sla_utilization":   util,
+            "breach_categories": breach_categories,
+            "breach_reasons":    breach_reasons,
             "reason": (
-                f"Processing latency ({latency} days) exceeds SLA target "
-                f"({target} days). SLA breach confirmed."
+                f"SLA breach confirmed [{', '.join(breach_categories)}]: Processing latency "
+                f"({latency} days) exceeds SLA target ({target} days). "
+                f"{'; '.join(breach_reasons)}."
             ),
         }
 
     return {
-        "sla_breach":      False,
-        "sla_utilization": util,
-        "status":          STATUS_NORMAL,  # may be upgraded to AT_RISK by risk module
+        "sla_breach":        False,
+        "is_breached":       False,
+        "sla_status":        STATUS_ON_TRACK,
+        "status":            STATUS_ON_TRACK,  # may be upgraded to AT_RISK by risk module
+        "sla_utilization":   util,
+        "breach_categories": [],
+        "breach_reasons":    [],
         "reason": (
             f"Processing latency ({latency} days) within SLA target "
             f"({target} days). Utilisation: {util:.1%}."
@@ -1210,14 +1283,22 @@ def classify_record_sla_risk(
     cusum = cusum_signal or CUSUM_NORMAL
 
     # NOT_ASSESSABLE records: no risk classification
-    if result["sla_breach"] == NOT_ASSESSABLE:
-        result["sla_risk"]     = None
-        result["risk_signals"] = {"ewma_signal": ewma, "cusum_signal": cusum}
+    if result.get("status") == STATUS_NOT_ASSESSABLE or result.get("sla_breach") == NOT_ASSESSABLE:
+        result["sla_risk"]          = None
+        result["sla_status"]        = STATUS_NOT_ASSESSABLE
+        result["status"]            = STATUS_NOT_ASSESSABLE
+        result["is_breached"]       = False
+        result["breach_categories"] = []
+        result["breach_reasons"]    = []
+        result["risk_signals"]      = {"ewma_signal": ewma, "cusum_signal": cusum}
         return result
 
     # BREACHED records: already worst-case
-    if result["sla_breach"] is True:
+    if result.get("status") == STATUS_BREACHED or result.get("is_breached") is True or result.get("sla_breach") is True:
         result["sla_risk"]     = None
+        result["sla_status"]   = STATUS_BREACHED
+        result["status"]       = STATUS_BREACHED
+        result["is_breached"]  = True
         result["risk_signals"] = {"ewma_signal": ewma, "cusum_signal": cusum}
         return result
 
@@ -1243,13 +1324,17 @@ def classify_record_sla_risk(
         )
     else:
         risk   = RISK_LOW
-        status = STATUS_NORMAL
+        status = STATUS_ON_TRACK
         reason = result["reason"]
 
-    result["sla_risk"]     = risk
-    result["status"]       = status
-    result["reason"]       = reason
-    result["risk_signals"] = {"ewma_signal": ewma, "cusum_signal": cusum}
+    result["sla_risk"]          = risk
+    result["sla_status"]        = status
+    result["status"]            = status
+    result["is_breached"]       = False
+    result["breach_categories"] = []
+    result["breach_reasons"]    = []
+    result["reason"]            = reason
+    result["risk_signals"]      = {"ewma_signal": ewma, "cusum_signal": cusum}
     return result
 
 
@@ -1454,11 +1539,13 @@ def _build_record_findings(
         validity   = str(row.get("temporal_validity", ""))
         latency    = row.get("Processing_Latency_Days")
         target     = row.get("SLA_Target_Days")
+        status_val = row.get("Status")
 
         breach_result = determine_record_breach(
             temporal_validity        = validity,
             processing_latency_days  = latency,
             sla_target_days          = target,
+            status_val               = status_val,
         )
 
         # Lookup group signals first, fallback to whole-batch signals
@@ -1471,6 +1558,11 @@ def _build_record_findings(
 
         risk_result = classify_record_sla_risk(breach_result, ewma_sig, cusum_sig)
 
+        primary_status = str(risk_result.get("sla_status") or risk_result.get("status") or STATUS_ON_TRACK)
+        is_breached = bool(risk_result.get("is_breached", False) or primary_status == STATUS_BREACHED)
+        breach_cats = risk_result.get("breach_categories", [])
+        breach_reasons = risk_result.get("breach_reasons", [])
+
         finding: dict[str, Any] = {
             "record_id":               str(row.get("Record_ID", "")),
             "record_type":             str(row.get("Record_Type", "")),
@@ -1481,9 +1573,13 @@ def _build_record_findings(
             "processing_latency_days": _safe_val(latency),
             "temporal_validity":       validity,
             "sla_utilization":         _safe_val(risk_result.get("sla_utilization")),
-            "sla_breach":              risk_result.get("sla_breach"),
+            "sla_breach":              is_breached if primary_status != STATUS_NOT_ASSESSABLE else NOT_ASSESSABLE,
+            "is_breached":             is_breached,
+            "sla_status":              primary_status,
+            "status":                  primary_status,
             "sla_risk":                risk_result.get("sla_risk"),
-            "status":                  risk_result.get("status"),
+            "breach_categories":       breach_cats,
+            "breach_reasons":          breach_reasons,
             "ewma_signal":             ewma_sig,
             "cusum_signal":            cusum_sig,
             "reason":                  risk_result.get("reason", ""),
@@ -1625,23 +1721,55 @@ def _build_summary(
 ) -> dict[str, Any]:
     """Calculate strictly reconciling summary metrics from findings."""
     total_records          = total_df_records
-    records_not_assessable = sum(1 for f in record_findings if f["sla_breach"] == NOT_ASSESSABLE)
-    records_assessable     = total_records - records_not_assessable
-    records_breached       = sum(1 for f in record_findings if f["sla_breach"] is True)
-    records_normal         = sum(1 for f in record_findings if f["sla_breach"] is False)
-    records_at_risk        = sum(1 for f in record_findings if f.get("status") == STATUS_AT_RISK)
 
-    # Reconciliation asserts (logs warning if ever violated)
-    if records_breached + records_normal != records_assessable:
+    # Strictly mutually exclusive record-level primary status counts
+    records_not_assessable = sum(
+        1 for f in record_findings
+        if f.get("sla_status") == STATUS_NOT_ASSESSABLE
+        or f.get("status") == STATUS_NOT_ASSESSABLE
+        or f.get("sla_breach") == NOT_ASSESSABLE
+    )
+    records_assessable     = total_records - records_not_assessable
+    records_breached       = sum(
+        1 for f in record_findings
+        if f.get("sla_status") == STATUS_BREACHED
+        or f.get("status") == STATUS_BREACHED
+        or f.get("is_breached") is True
+        or f.get("sla_breach") is True
+    )
+    records_at_risk        = sum(
+        1 for f in record_findings
+        if (f.get("sla_status") == STATUS_AT_RISK or f.get("status") == STATUS_AT_RISK)
+        and f.get("sla_status") != STATUS_BREACHED
+        and f.get("sla_status") != STATUS_NOT_ASSESSABLE
+    )
+    records_on_track       = sum(
+        1 for f in record_findings
+        if f.get("sla_status") in (STATUS_ON_TRACK, "NORMAL", "ON_TRACK")
+        and f.get("status") in (STATUS_ON_TRACK, "NORMAL", "ON_TRACK")
+        and f.get("sla_status") != STATUS_AT_RISK
+        and f.get("sla_status") != STATUS_BREACHED
+        and f.get("sla_status") != STATUS_NOT_ASSESSABLE
+    )
+
+    # Mandatory Reconciliation Invariant Assertions
+    if records_on_track + records_at_risk + records_breached + records_not_assessable != total_records:
         logger.error(
-            "Summary mismatch: breached (%d) + normal (%d) != assessable (%d)",
-            records_breached, records_normal, records_assessable,
+            "Summary mismatch: on_track (%d) + at_risk (%d) + breached (%d) + not_assessable (%d) != total (%d)",
+            records_on_track, records_at_risk, records_breached, records_not_assessable, total_records,
         )
-    if records_assessable + records_not_assessable != total_records:
+    if records_on_track + records_at_risk + records_breached != records_assessable:
         logger.error(
-            "Summary mismatch: assessable (%d) + not_assessable (%d) != total (%d)",
-            records_assessable, records_not_assessable, total_records,
+            "Summary mismatch: on_track (%d) + at_risk (%d) + breached (%d) != assessable (%d)",
+            records_on_track, records_at_risk, records_breached, records_assessable,
         )
+
+    # Exactly Three SLA Breach Categories Breakdown (Unique records per category, may overlap across categories)
+    breach_breakdown = {
+        "time_based": sum(1 for f in record_findings if BREACH_CAT_TIME_BASED in f.get("breach_categories", [])),
+        "service_payment_based": sum(1 for f in record_findings if BREACH_CAT_SERVICE_PAYMENT in f.get("breach_categories", [])),
+        "pending_outcome": sum(1 for f in record_findings if BREACH_CAT_PENDING_OUTCOME in f.get("breach_categories", [])),
+    }
 
     batches_at_risk = sum(
         1 for f in batch_findings if f.get("batch_sla_status") == STATUS_AT_RISK
@@ -1663,27 +1791,35 @@ def _build_summary(
                 "not_assessable": 0,
                 "breached": 0,
                 "normal": 0,
+                "on_track": 0,
                 "at_risk": 0,
             }
         by_group[grp]["total"] += 1
-        if f["sla_breach"] == NOT_ASSESSABLE:
+        st = f.get("sla_status", f.get("status"))
+        if st == STATUS_NOT_ASSESSABLE or f.get("sla_breach") == NOT_ASSESSABLE:
             by_group[grp]["not_assessable"] += 1
         else:
             by_group[grp]["assessable"] += 1
-            if f["sla_breach"] is True:
+            if st == STATUS_BREACHED or f.get("is_breached") is True or f.get("sla_breach") is True:
                 by_group[grp]["breached"] += 1
+            elif st == STATUS_AT_RISK:
+                by_group[grp]["at_risk"] += 1
             else:
                 by_group[grp]["normal"] += 1
-            if f.get("status") == STATUS_AT_RISK:
-                by_group[grp]["at_risk"] += 1
+                by_group[grp]["on_track"] += 1
 
     return {
         "total_records":              total_records,
         "records_assessable":         records_assessable,
         "records_not_assessable":     records_not_assessable,
         "records_breached":           records_breached,
-        "records_normal":             records_normal,
+        "records_normal":             records_on_track,
         "records_at_risk":            records_at_risk,
+        "on_track":                   records_on_track,
+        "at_risk":                    records_at_risk,
+        "breached":                   records_breached,
+        "not_assessable":             records_not_assessable,
+        "breach_breakdown":           breach_breakdown,
         "batches_total":              len(set(f["batch_id"] for f in batch_findings)),
         "batches_at_risk":            batches_at_risk,
         "pipeline_gaps_detected":     pipeline_gaps,

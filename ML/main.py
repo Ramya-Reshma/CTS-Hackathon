@@ -166,11 +166,14 @@ def run_pipeline(input_file: str, output_dir: str | None = None) -> str:
             "ML_Is_Anomalous": is_anomalous,
             "anomaly_type": anomaly_type,
             "primary_signal": primary_signal,
-            # Propagate existing SLA output fields from SLA engine
+            # Propagate authoritative SLA output fields from SLA engine
             "SLA_Applicable": sla_finding.get("temporal_validity") != "NOT_ASSESSABLE" if sla_finding else True,
             "SLA_Target_Days": sla_finding.get("sla_target_days", safe_float(row.get("SLA_Target_Days"))),
             "Processing_Latency_Days": sla_finding.get("processing_latency_days", safe_float(row.get("Processing_Latency_Days"))),
-            "SLA_Status": sla_finding.get("status"),
+            "SLA_Status": sla_finding.get("sla_status", sla_finding.get("status")),
+            "Is_Breached": bool(sla_finding.get("is_breached", sla_finding.get("sla_breach") is True)),
+            "Breach_Categories": sla_finding.get("breach_categories", []),
+            "Breach_Reasons": sla_finding.get("breach_reasons", []),
             "SLA_Risk": sla_finding.get("sla_risk"),
             "SLA_Breach": sla_finding.get("sla_breach"),
             "SLA_Utilization": sla_finding.get("sla_utilization"),

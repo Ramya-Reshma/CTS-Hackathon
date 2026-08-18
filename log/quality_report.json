@@ -1,13 +1,13 @@
 {
-    "run_timestamp": "2026-08-18T15:09:21.240038",
+    "run_timestamp": "2026-08-18T15:37:22.998071",
     "records_scanned": 100,
     "dimension_scores": {
-        "Completeness": 83.33333333333333,
-        "Validity": 58.25,
+        "Completeness": 96.38888888888889,
+        "Validity": 59.535714285714285,
         "Uniqueness": 100.0,
-        "Consistency": 71.42857142857143
+        "Consistency": 85.71428571428571
     },
-    "overall_quality_score": 77.42327857142857,
+    "overall_quality_score": 84.58156904761904,
     "overall_risk_level": "MEDIUM",
     "critical_issue_count": 0,
     "all_rule_results": [
@@ -50,16 +50,22 @@
             "rule_name": "Beneficiary and Provider Completeness",
             "dimension": "Completeness",
             "severity": "High",
-            "status": "PASSED",
+            "status": "FAILED",
             "total_applicable_records": 100,
-            "affected_records": 0,
-            "failure_rate_pct": 0.0,
-            "sample_record_ids": [],
+            "affected_records": 5,
+            "failure_rate_pct": 5.0,
+            "sample_record_ids": [
+                "TEST_0087",
+                "TEST_0090",
+                "TEST_0093",
+                "TEST_0096",
+                "TEST_0099"
+            ],
             "fields": [
                 "BENE_ID",
                 "Provider_NPI"
             ],
-            "message": "All records passed.",
+            "message": "5 records failed the rule.",
             "description": "BENE_ID and Provider_NPI must be present for every record type.",
             "recommended_fix": "Ensure patient and provider contexts are fully mapped in the data pipeline."
         },
@@ -70,8 +76,8 @@
             "severity": "High",
             "status": "FAILED",
             "total_applicable_records": 100,
-            "affected_records": 100,
-            "failure_rate_pct": 100.0,
+            "affected_records": 95,
+            "failure_rate_pct": 95.0,
             "sample_record_ids": [
                 "TEST_0001",
                 "TEST_0002",
@@ -87,7 +93,7 @@
             "fields": [
                 "Provider_NPI"
             ],
-            "message": "100 records failed the rule.",
+            "message": "95 records failed the rule.",
             "description": "Provider_NPI must contain exactly 10 digits when present.",
             "recommended_fix": "Validate NPI format against the National Plan and Provider Enumeration System standard."
         },
@@ -125,27 +131,16 @@
             "rule_name": "Source System Consistency",
             "dimension": "Consistency",
             "severity": "High",
-            "status": "FAILED",
+            "status": "PASSED",
             "total_applicable_records": 100,
-            "affected_records": 100,
-            "failure_rate_pct": 100.0,
-            "sample_record_ids": [
-                "TEST_0001",
-                "TEST_0002",
-                "TEST_0003",
-                "TEST_0004",
-                "TEST_0005",
-                "TEST_0006",
-                "TEST_0007",
-                "TEST_0008",
-                "TEST_0009",
-                "TEST_0010"
-            ],
+            "affected_records": 0,
+            "failure_rate_pct": 0.0,
+            "sample_record_ids": [],
             "fields": [
                 "Record_Type",
                 "Source_System"
             ],
-            "message": "100 records failed the rule.",
+            "message": "All records passed.",
             "description": "Record_Type must map to the correct Source_System.",
             "recommended_fix": "Correct source system mapping tables in the ETL logic."
         },
@@ -155,7 +150,7 @@
             "dimension": "Completeness",
             "severity": "High",
             "status": "PASSED",
-            "total_applicable_records": 34,
+            "total_applicable_records": 35,
             "affected_records": 0,
             "failure_rate_pct": 0.0,
             "sample_record_ids": [],
@@ -177,22 +172,11 @@
             "rule_name": "Pharmacy Claim Core Fields Completeness",
             "dimension": "Completeness",
             "severity": "High",
-            "status": "FAILED",
-            "total_applicable_records": 33,
-            "affected_records": 33,
-            "failure_rate_pct": 100.0,
-            "sample_record_ids": [
-                "TEST_0002",
-                "TEST_0005",
-                "TEST_0008",
-                "TEST_0011",
-                "TEST_0014",
-                "TEST_0017",
-                "TEST_0020",
-                "TEST_0023",
-                "TEST_0026",
-                "TEST_0029"
-            ],
+            "status": "PASSED",
+            "total_applicable_records": 35,
+            "affected_records": 0,
+            "failure_rate_pct": 0.0,
+            "sample_record_ids": [],
             "fields": [
                 "Service_Date",
                 "Service_End_Date",
@@ -205,7 +189,7 @@
                 "Paid_Amount",
                 "Patient_Responsibility"
             ],
-            "message": "33 records failed the rule.",
+            "message": "All records passed.",
             "description": "PHARMACY_CLAIM requires specific dates, drug details, and financial amounts.",
             "recommended_fix": "Verify that all required pharmacy claim fields are extracted from PHARMACY_ADJ_SYS."
         },
@@ -214,11 +198,17 @@
             "rule_name": "Prior Auth Core Fields Completeness",
             "dimension": "Completeness",
             "severity": "High",
-            "status": "PASSED",
-            "total_applicable_records": 33,
-            "affected_records": 0,
-            "failure_rate_pct": 0.0,
-            "sample_record_ids": [],
+            "status": "FAILED",
+            "total_applicable_records": 30,
+            "affected_records": 5,
+            "failure_rate_pct": 16.666666666666664,
+            "sample_record_ids": [
+                "TEST_0086",
+                "TEST_0089",
+                "TEST_0092",
+                "TEST_0095",
+                "TEST_0098"
+            ],
             "fields": [
                 "Procedure_Code",
                 "Urgency_Flag",
@@ -226,7 +216,7 @@
                 "Decision_Date",
                 "Status"
             ],
-            "message": "All records passed.",
+            "message": "5 records failed the rule.",
             "description": "PRIOR_AUTH requires codes and urgency, plus dates if APPROVED or DENIED.",
             "recommended_fix": "Ensure decision dates are captured when prior authorizations leave the PENDING state."
         },
@@ -235,18 +225,21 @@
             "rule_name": "Financial Amount Non-Negative Validity",
             "dimension": "Validity",
             "severity": "High",
-            "status": "PASSED",
-            "total_applicable_records": 67,
-            "affected_records": 0,
-            "failure_rate_pct": 0.0,
-            "sample_record_ids": [],
+            "status": "FAILED",
+            "total_applicable_records": 70,
+            "affected_records": 2,
+            "failure_rate_pct": 2.857142857142857,
+            "sample_record_ids": [
+                "TEST_0005",
+                "TEST_0007"
+            ],
             "fields": [
                 "Billed_Amount",
                 "Allowed_Amount",
                 "Paid_Amount",
                 "Patient_Responsibility"
             ],
-            "message": "All records passed.",
+            "message": "2 records failed the rule.",
             "description": "Financial amounts for claims must not be negative.",
             "recommended_fix": "Review adjustment or reversal logic to ensure final line amounts are non-negative."
         },
@@ -256,7 +249,7 @@
             "dimension": "Validity",
             "severity": "High",
             "status": "PASSED",
-            "total_applicable_records": 33,
+            "total_applicable_records": 35,
             "affected_records": 0,
             "failure_rate_pct": 0.0,
             "sample_record_ids": [],
@@ -275,17 +268,17 @@
             "severity": "High",
             "status": "FAILED",
             "total_applicable_records": 100,
-            "affected_records": 67,
-            "failure_rate_pct": 67.0,
+            "affected_records": 64,
+            "failure_rate_pct": 64.0,
             "sample_record_ids": [
                 "TEST_0001",
                 "TEST_0002",
+                "TEST_0003",
                 "TEST_0004",
                 "TEST_0005",
+                "TEST_0006",
                 "TEST_0007",
                 "TEST_0008",
-                "TEST_0010",
-                "TEST_0011",
                 "TEST_0013",
                 "TEST_0014"
             ],
@@ -293,7 +286,7 @@
                 "Record_Type",
                 "Status"
             ],
-            "message": "67 records failed the rule.",
+            "message": "64 records failed the rule.",
             "description": "Status must be a valid value for the given Record_Type.",
             "recommended_fix": "Update allowed value lists or correct status mapping during data ingestion."
         },
@@ -321,7 +314,7 @@
             "dimension": "Consistency",
             "severity": "High",
             "status": "PASSED",
-            "total_applicable_records": 67,
+            "total_applicable_records": 70,
             "affected_records": 0,
             "failure_rate_pct": 0.0,
             "sample_record_ids": [],
@@ -375,7 +368,7 @@
             "dimension": "Consistency",
             "severity": "Critical",
             "status": "PASSED",
-            "total_applicable_records": 67,
+            "total_applicable_records": 70,
             "affected_records": 0,
             "failure_rate_pct": 0.0,
             "sample_record_ids": [],
@@ -393,7 +386,7 @@
             "dimension": "Consistency",
             "severity": "High",
             "status": "PASSED",
-            "total_applicable_records": 67,
+            "total_applicable_records": 70,
             "affected_records": 0,
             "failure_rate_pct": 0.0,
             "sample_record_ids": [],
@@ -406,34 +399,6 @@
         }
     ],
     "top_failed_rules": [
-        {
-            "rule_id": "R004",
-            "rule_name": "Provider_NPI Validity",
-            "dimension": "Validity",
-            "severity": "High",
-            "status": "FAILED",
-            "total_applicable_records": 100,
-            "affected_records": 100,
-            "failure_rate_pct": 100.0,
-            "sample_record_ids": [
-                "TEST_0001",
-                "TEST_0002",
-                "TEST_0003",
-                "TEST_0004",
-                "TEST_0005",
-                "TEST_0006",
-                "TEST_0007",
-                "TEST_0008",
-                "TEST_0009",
-                "TEST_0010"
-            ],
-            "fields": [
-                "Provider_NPI"
-            ],
-            "message": "100 records failed the rule.",
-            "description": "Provider_NPI must contain exactly 10 digits when present.",
-            "recommended_fix": "Validate NPI format against the National Plan and Provider Enumeration System standard."
-        },
         {
             "rule_id": "R005",
             "rule_name": "Record_ID Prefix Consistency",
@@ -464,14 +429,14 @@
             "recommended_fix": "Check for ID generation errors or mismatched Record_Type assignments."
         },
         {
-            "rule_id": "R006",
-            "rule_name": "Source System Consistency",
-            "dimension": "Consistency",
+            "rule_id": "R004",
+            "rule_name": "Provider_NPI Validity",
+            "dimension": "Validity",
             "severity": "High",
             "status": "FAILED",
             "total_applicable_records": 100,
-            "affected_records": 100,
-            "failure_rate_pct": 100.0,
+            "affected_records": 95,
+            "failure_rate_pct": 95.0,
             "sample_record_ids": [
                 "TEST_0001",
                 "TEST_0002",
@@ -485,49 +450,11 @@
                 "TEST_0010"
             ],
             "fields": [
-                "Record_Type",
-                "Source_System"
+                "Provider_NPI"
             ],
-            "message": "100 records failed the rule.",
-            "description": "Record_Type must map to the correct Source_System.",
-            "recommended_fix": "Correct source system mapping tables in the ETL logic."
-        },
-        {
-            "rule_id": "R008",
-            "rule_name": "Pharmacy Claim Core Fields Completeness",
-            "dimension": "Completeness",
-            "severity": "High",
-            "status": "FAILED",
-            "total_applicable_records": 33,
-            "affected_records": 33,
-            "failure_rate_pct": 100.0,
-            "sample_record_ids": [
-                "TEST_0002",
-                "TEST_0005",
-                "TEST_0008",
-                "TEST_0011",
-                "TEST_0014",
-                "TEST_0017",
-                "TEST_0020",
-                "TEST_0023",
-                "TEST_0026",
-                "TEST_0029"
-            ],
-            "fields": [
-                "Service_Date",
-                "Service_End_Date",
-                "NDC_Code",
-                "Drug_Name",
-                "Days_Supply",
-                "Quantity_Dispensed",
-                "Billed_Amount",
-                "Allowed_Amount",
-                "Paid_Amount",
-                "Patient_Responsibility"
-            ],
-            "message": "33 records failed the rule.",
-            "description": "PHARMACY_CLAIM requires specific dates, drug details, and financial amounts.",
-            "recommended_fix": "Verify that all required pharmacy claim fields are extracted from PHARMACY_ADJ_SYS."
+            "message": "95 records failed the rule.",
+            "description": "Provider_NPI must contain exactly 10 digits when present.",
+            "recommended_fix": "Validate NPI format against the National Plan and Provider Enumeration System standard."
         },
         {
             "rule_id": "R012",
@@ -536,17 +463,17 @@
             "severity": "High",
             "status": "FAILED",
             "total_applicable_records": 100,
-            "affected_records": 67,
-            "failure_rate_pct": 67.0,
+            "affected_records": 64,
+            "failure_rate_pct": 64.0,
             "sample_record_ids": [
                 "TEST_0001",
                 "TEST_0002",
+                "TEST_0003",
                 "TEST_0004",
                 "TEST_0005",
+                "TEST_0006",
                 "TEST_0007",
                 "TEST_0008",
-                "TEST_0010",
-                "TEST_0011",
                 "TEST_0013",
                 "TEST_0014"
             ],
@@ -554,9 +481,60 @@
                 "Record_Type",
                 "Status"
             ],
-            "message": "67 records failed the rule.",
+            "message": "64 records failed the rule.",
             "description": "Status must be a valid value for the given Record_Type.",
             "recommended_fix": "Update allowed value lists or correct status mapping during data ingestion."
+        },
+        {
+            "rule_id": "R009",
+            "rule_name": "Prior Auth Core Fields Completeness",
+            "dimension": "Completeness",
+            "severity": "High",
+            "status": "FAILED",
+            "total_applicable_records": 30,
+            "affected_records": 5,
+            "failure_rate_pct": 16.666666666666664,
+            "sample_record_ids": [
+                "TEST_0086",
+                "TEST_0089",
+                "TEST_0092",
+                "TEST_0095",
+                "TEST_0098"
+            ],
+            "fields": [
+                "Procedure_Code",
+                "Urgency_Flag",
+                "Processed_Date",
+                "Decision_Date",
+                "Status"
+            ],
+            "message": "5 records failed the rule.",
+            "description": "PRIOR_AUTH requires codes and urgency, plus dates if APPROVED or DENIED.",
+            "recommended_fix": "Ensure decision dates are captured when prior authorizations leave the PENDING state."
+        },
+        {
+            "rule_id": "R003",
+            "rule_name": "Beneficiary and Provider Completeness",
+            "dimension": "Completeness",
+            "severity": "High",
+            "status": "FAILED",
+            "total_applicable_records": 100,
+            "affected_records": 5,
+            "failure_rate_pct": 5.0,
+            "sample_record_ids": [
+                "TEST_0087",
+                "TEST_0090",
+                "TEST_0093",
+                "TEST_0096",
+                "TEST_0099"
+            ],
+            "fields": [
+                "BENE_ID",
+                "Provider_NPI"
+            ],
+            "message": "5 records failed the rule.",
+            "description": "BENE_ID and Provider_NPI must be present for every record type.",
+            "recommended_fix": "Ensure patient and provider contexts are fully mapped in the data pipeline."
         }
     ]
 }

@@ -2,24 +2,47 @@
   "relationships_checked": [
     {
       "name": "Paid_Amount ~ Allowed_Amount",
-      "pearson_r": NaN,
-      "fitted_coefficient": -0.0,
-      "fitted_intercept": 72.0,
-      "residual_std": 0.0,
-      "anomalies_flagged": 0
+      "pearson_r": 0.9995,
+      "fitted_coefficient": 0.8729,
+      "fitted_intercept": 18.8107,
+      "residual_std": 23.91,
+      "anomalies_flagged": 2
     },
     {
       "name": "Quantity_Dispensed ~ Days_Supply",
       "pearson_r": NaN,
       "fitted_coefficient": 0.0,
-      "fitted_intercept": 10.4848,
-      "residual_std": 8.91,
+      "fitted_intercept": 30.0,
+      "residual_std": 0.0,
       "anomalies_flagged": 0
     }
   ],
   "summary": {
-    "combined_anomalies": 0,
-    "combined_anomalies_pct": 0.0
+    "combined_anomalies": 2,
+    "combined_anomalies_pct": 2.0
   },
-  "sample_flagged_records": []
+  "sample_flagged_records": [
+    {
+      "Record_ID": "TEST_0005",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000010000005",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 155.24974917381235,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": "",
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    },
+    {
+      "Record_ID": "TEST_0007",
+      "Record_Type": "MEDICAL_CLAIM",
+      "BENE_ID": "-10000010000007",
+      "Correlation_Anomaly": true,
+      "Correlation_Residual": 168.46952669381903,
+      "Quantity_Supply_Anomaly": false,
+      "Quantity_Supply_Residual": "",
+      "Correlation_Module_Anomaly_Count": 1,
+      "Correlation_Module_Is_Anomalous": true
+    }
+  ]
 }

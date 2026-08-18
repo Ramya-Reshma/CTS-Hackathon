@@ -1,6 +1,6 @@
 {
     "total_records": 100,
-    "total_columns": 77,
+    "total_columns": 65,
     "columns": {
         "Record_ID": {
             "data_type": "object",
@@ -20,396 +20,284 @@
                 "TEST_0010": 1
             }
         },
-        "Claim_Type": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 3,
-            "value_counts": {
-                "Medical Claim": 34,
-                "Pharmacy Claim": 33,
-                "Prior Auth": 33
-            }
-        },
-        "Billed_Amount": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 100,
-            "min": 108.29,
-            "max": 14978.61,
-            "mean": 2912.9274
-        },
-        "Allowed_Amount": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 100,
-            "min": 100.46,
-            "max": 4481.21,
-            "mean": 1800.2259999999997
-        },
-        "Allowed_To_Billed_Ratio": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 100,
-            "min": 0.0113,
-            "max": 14.9921,
-            "mean": 1.2013230000000001
-        },
-        "Quantity": {
-            "data_type": "int64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 21,
-            "min": 1.0,
-            "max": 51.0,
-            "mean": 8.91
-        },
-        "Processing_Latency_Days": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 78,
-            "min": 0.35,
-            "max": 4.47,
-            "mean": 1.4181000000000004
-        },
-        "SLA_Target_Days": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 2.0,
-            "max": 2.0,
-            "mean": 2.0
-        },
-        "SLA_Status": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 2,
-            "value_counts": {
-                "NORMAL": 88,
-                "BREACHED": 12
-            }
-        },
-        "Anomaly_Status": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 2,
-            "value_counts": {
-                "NORMAL": 82,
-                "ANOMALOUS": 18
-            }
-        },
-        "Anomaly_Type": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 4,
-            "value_counts": {
-                "Normal": 82,
-                "Isolation Forest Anomaly": 6,
-                "IQR Anomaly": 6,
-                "Composite Anomaly": 6
-            }
-        },
-        "Anomaly_Score": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 100,
-            "min": -0.1437,
-            "max": 0.1993,
-            "mean": 0.071494
-        },
-        "Severity": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 3,
-            "value_counts": {
-                "LOW": 86,
-                "HIGH": 9,
-                "MEDIUM": 5
-            }
-        },
-        "Data_Quality_Status": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 3,
-            "value_counts": {
-                "PASS": 75,
-                "FAIL": 20,
-                "UNASSESSABLE": 5
-            }
-        },
-        "Validity_Status": {
-            "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 3,
-            "value_counts": {
-                "VALID": 75,
-                "INVALID": 20,
-                "UNASSESSABLE": 5
-            }
-        },
-        "DQ_Score": {
-            "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 2,
-            "min": 0.0,
-            "max": 100.0,
-            "mean": 75.0
-        },
-        "DQ_Issue": {
-            "data_type": "object",
-            "missing_count": 75,
-            "missing_percentage": 75.0,
-            "unique_count": 5,
-            "value_counts": {
-                "Invalid date ordering": 5,
-                "Invalid claim amount relationship": 5,
-                "Missing provider identifier": 5,
-                "Missing required source field": 5,
-                "Required field unavailable for validity assessment": 5
-            }
-        },
         "Record_Type": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
             "unique_count": 3,
             "value_counts": {
-                "MEDICAL_CLAIM": 34,
-                "PHARMACY_CLAIM": 33,
-                "PRIOR_AUTH": 33
+                "MEDICAL_CLAIM": 35,
+                "PHARMACY_CLAIM": 35,
+                "PRIOR_AUTH": 30
             }
-        },
-        "Quantity_Dispensed": {
-            "data_type": "int64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 21,
-            "min": 1.0,
-            "max": 51.0,
-            "mean": 8.91
         },
         "BENE_ID": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 50,
+            "unique_count": 100,
             "value_counts": {
-                "BENE_0001": 2,
-                "BENE_0002": 2,
-                "BENE_0003": 2,
-                "BENE_0004": 2,
-                "BENE_0005": 2,
-                "BENE_0006": 2,
-                "BENE_0007": 2,
-                "BENE_0008": 2,
-                "BENE_0009": 2,
-                "BENE_0010": 2
+                "-10000010000001": 1,
+                "-10000010000002": 1,
+                "-10000010000003": 1,
+                "-10000010000004": 1,
+                "-10000010000005": 1,
+                "-10000010000006": 1,
+                "-10000010000007": 1,
+                "-10000010000008": 1,
+                "-10000010000009": 1,
+                "-10000010000010": 1
             }
         },
         "Provider_NPI": {
             "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 20,
+            "missing_count": 5,
+            "missing_percentage": 5.0,
+            "unique_count": 95,
             "value_counts": {
-                "NPI_1000000000": 5,
-                "NPI_1000000001": 5,
-                "NPI_1000000002": 5,
-                "NPI_1000000003": 5,
-                "NPI_1000000004": 5,
-                "NPI_1000000005": 5,
-                "NPI_1000000006": 5,
-                "NPI_1000000007": 5,
-                "NPI_1000000008": 5,
-                "NPI_1000000009": 5
+                "1000000001.0": 1,
+                "1000000002.0": 1,
+                "1000000003.0": 1,
+                "1000000004.0": 1,
+                "1000000005.0": 1,
+                "1000000006.0": 1,
+                "1000000007.0": 1,
+                "1000000008.0": 1,
+                "1000000009.0": 1,
+                "1000000010.0": 1
             }
         },
         "Provider_State": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 10,
             "value_counts": {
-                "TX": 100
+                "CA": 10,
+                "FL": 10,
+                "GA": 10,
+                "TX": 10,
+                "NY": 10,
+                "IL": 10,
+                "PA": 10,
+                "OH": 10,
+                "AZ": 10,
+                "WA": 10
             }
         },
         "Service_Date": {
             "data_type": "datetime64[ns]",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1
+            "unique_count": 100
         },
         "Service_End_Date": {
             "data_type": "datetime64[ns]",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1
+            "unique_count": 100
         },
         "Submission_Date": {
             "data_type": "datetime64[ns]",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1
+            "unique_count": 100
         },
         "Processed_Date": {
             "data_type": "datetime64[ns]",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
-            "unique_count": 1
+            "missing_count": 5,
+            "missing_percentage": 5.0,
+            "unique_count": 69
         },
         "Decision_Date": {
             "data_type": "datetime64[ns]",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1
+            "unique_count": 74
         },
         "Status": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 5,
             "value_counts": {
-                "APPROVED": 100
+                "APPROVED": 84,
+                "PAID": 8,
+                "PENDING": 4,
+                "PAYMENT_PENDING": 2,
+                "SERVICE_PENDING": 2
             }
         },
         "Denial_Reason_Code": {
-            "data_type": "float64",
-            "missing_count": 100,
-            "missing_percentage": 100.0,
-            "unique_count": 0,
-            "min": null,
-            "max": null,
-            "mean": null
+            "data_type": "object",
+            "missing_count": 98,
+            "missing_percentage": 98.0,
+            "unique_count": 1,
+            "value_counts": {
+                "D_SERVICE_PENDING": 2
+            }
         },
         "Diagnosis_Code": {
             "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
+            "missing_count": 65,
+            "missing_percentage": 65.0,
             "unique_count": 1,
             "value_counts": {
-                "Z00.00": 100
+                "Z733": 35
             }
         },
         "Procedure_Code": {
-            "data_type": "int64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
+            "data_type": "float64",
+            "missing_count": 35,
+            "missing_percentage": 35.0,
             "unique_count": 1,
             "min": 99213.0,
             "max": 99213.0,
             "mean": 99213.0
         },
         "NDC_Code": {
-            "data_type": "float64",
-            "missing_count": 100,
-            "missing_percentage": 100.0,
-            "unique_count": 0,
-            "min": null,
-            "max": null,
-            "mean": null
+            "data_type": "object",
+            "missing_count": 65,
+            "missing_percentage": 65.0,
+            "unique_count": 1,
+            "value_counts": {
+                "00093-0000-01": 35
+            }
         },
         "Drug_Name": {
-            "data_type": "float64",
-            "missing_count": 100,
-            "missing_percentage": 100.0,
-            "unique_count": 0,
-            "min": null,
-            "max": null,
-            "mean": null
+            "data_type": "object",
+            "missing_count": 65,
+            "missing_percentage": 65.0,
+            "unique_count": 1,
+            "value_counts": {
+                "TestDrug": 35
+            }
         },
         "Days_Supply": {
-            "data_type": "int64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
+            "data_type": "float64",
+            "missing_count": 65,
+            "missing_percentage": 65.0,
             "unique_count": 1,
             "min": 30.0,
             "max": 30.0,
             "mean": 30.0
         },
+        "Quantity_Dispensed": {
+            "data_type": "float64",
+            "missing_count": 65,
+            "missing_percentage": 65.0,
+            "unique_count": 1,
+            "min": 30.0,
+            "max": 30.0,
+            "mean": 30.0
+        },
+        "Billed_Amount": {
+            "data_type": "float64",
+            "missing_count": 5,
+            "missing_percentage": 5.0,
+            "unique_count": 95,
+            "min": 837.5,
+            "max": 4512.5,
+            "mean": 2607.8947368421054
+        },
+        "Allowed_Amount": {
+            "data_type": "float64",
+            "missing_count": 0,
+            "missing_percentage": 0.0,
+            "unique_count": 100,
+            "min": 592.5,
+            "max": 3640.0,
+            "mean": 2150.9
+        },
         "Paid_Amount": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 72.0,
-            "max": 72.0,
-            "mean": 72.0
+            "unique_count": 100,
+            "min": 589.6,
+            "max": 3203.2,
+            "mean": 1896.318
         },
         "Patient_Responsibility": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "unique_count": 100,
+            "min": -106.25,
+            "max": 436.8,
+            "mean": 254.58199999999997
         },
         "Urgency_Flag": {
             "data_type": "object",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
+            "missing_count": 35,
+            "missing_percentage": 35.0,
             "unique_count": 1,
             "value_counts": {
-                "STANDARD": 100
+                "STANDARD": 65
             }
         },
         "Auth_Required_Flag": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 2,
             "value_counts": {
-                "N": 100
+                "N": 70,
+                "Y": 30
             }
         },
         "Auth_Linked_ID": {
-            "data_type": "float64",
-            "missing_count": 100,
-            "missing_percentage": 100.0,
-            "unique_count": 0,
-            "min": null,
-            "max": null,
-            "mean": null
+            "data_type": "object",
+            "missing_count": 70,
+            "missing_percentage": 70.0,
+            "unique_count": 30,
+            "value_counts": {
+                "AUTH_0071": 1,
+                "AUTH_0072": 1,
+                "AUTH_0073": 1,
+                "AUTH_0074": 1,
+                "AUTH_0075": 1,
+                "AUTH_0076": 1,
+                "AUTH_0077": 1,
+                "AUTH_0078": 1,
+                "AUTH_0079": 1,
+                "AUTH_0080": 1
+            }
         },
         "Batch_ID": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 4,
+            "unique_count": 100,
             "value_counts": {
-                "BATCH_20260101": 25,
-                "BATCH_20260102": 25,
-                "BATCH_20260103": 25,
-                "BATCH_20260104": 25
+                "BATCH_20260103": 1,
+                "BATCH_20260104": 1,
+                "BATCH_20260105": 1,
+                "BATCH_20260106": 1,
+                "BATCH_20260107": 1,
+                "BATCH_20260108": 1,
+                "BATCH_20260109": 1,
+                "BATCH_20260110": 1,
+                "BATCH_20260111": 1,
+                "BATCH_20260112": 1
             }
         },
         "Source_System": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 3,
             "value_counts": {
-                "FACETS": 100
+                "CARRIER_CLAIMS_SYS": 35,
+                "PHARMACY_ADJ_SYS": 35,
+                "AUTH_MGMT_SYS": 30
             }
         },
         "Ingestion_Timestamp": {
             "data_type": "datetime64[ns]",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1
+            "unique_count": 100
         },
         "Retry_Count": {
             "data_type": "int64",
@@ -420,34 +308,53 @@
             "max": 0.0,
             "mean": 0.0
         },
+        "Processing_Latency_Days": {
+            "data_type": "float64",
+            "missing_count": 0,
+            "missing_percentage": 0.0,
+            "unique_count": 16,
+            "min": 1.0,
+            "max": 35.0,
+            "mean": 9.83
+        },
+        "SLA_Target_Days": {
+            "data_type": "int64",
+            "missing_count": 0,
+            "missing_percentage": 0.0,
+            "unique_count": 3,
+            "min": 2.0,
+            "max": 30.0,
+            "mean": 15.4
+        },
         "SLA_Breach_Flag": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 2,
             "value_counts": {
-                "N": 100
+                "N": 88,
+                "Y": 12
             }
         },
         "Batch_Date": {
             "data_type": "datetime64[ns]",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 4
+            "unique_count": 100
         },
         "Provider_Total_Records": {
-            "data_type": "int64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
+            "data_type": "float64",
+            "missing_count": 5,
+            "missing_percentage": 5.0,
             "unique_count": 1,
-            "min": 5.0,
-            "max": 5.0,
-            "mean": 5.0
+            "min": 1.0,
+            "max": 1.0,
+            "mean": 1.0
         },
         "Provider_Denial_Rate": {
             "data_type": "float64",
-            "missing_count": 0,
-            "missing_percentage": 0.0,
+            "missing_count": 5,
+            "missing_percentage": 5.0,
             "unique_count": 1,
             "min": 0.0,
             "max": 0.0,
@@ -458,18 +365,18 @@
             "missing_count": 0,
             "missing_percentage": 0.0,
             "unique_count": 1,
-            "min": 25.0,
-            "max": 25.0,
-            "mean": 25.0
+            "min": 1.0,
+            "max": 1.0,
+            "mean": 1.0
         },
         "Rolling_7D_Avg_Volume": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
             "unique_count": 1,
-            "min": 25.0,
-            "max": 25.0,
-            "mean": 25.0
+            "min": 1.0,
+            "max": 1.0,
+            "mean": 1.0
         },
         "Volume_Vs_Trend_Ratio": {
             "data_type": "float64",
@@ -484,37 +391,37 @@
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 2,
             "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "max": 1.0,
+            "mean": 0.12
         },
         "Rolling_7D_Avg_SLA_Breach_Rate": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 8,
             "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "max": 1.0,
+            "mean": 0.15
         },
         "SLA_Breach_Rate_Vs_Trend_Diff": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 0.0,
+            "unique_count": 7,
+            "min": -0.8571,
             "max": 0.0,
-            "mean": 0.0
+            "mean": -0.03
         },
         "Beneficiary_Record_Count": {
             "data_type": "int64",
             "missing_count": 0,
             "missing_percentage": 0.0,
             "unique_count": 1,
-            "min": 2.0,
-            "max": 2.0,
-            "mean": 2.0
+            "min": 1.0,
+            "max": 1.0,
+            "mean": 1.0
         },
         "High_Frequency_Beneficiary_Flag": {
             "data_type": "bool",
@@ -536,8 +443,8 @@
         },
         "Days_Since_Prev_Batch": {
             "data_type": "float64",
-            "missing_count": 25,
-            "missing_percentage": 25.0,
+            "missing_count": 3,
+            "missing_percentage": 3.0,
             "unique_count": 1,
             "min": 1.0,
             "max": 1.0,
@@ -556,37 +463,43 @@
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 7,
             "value_counts": {
-                "Friday": 100
+                "Saturday": 15,
+                "Sunday": 15,
+                "Monday": 14,
+                "Tuesday": 14,
+                "Wednesday": 14,
+                "Thursday": 14,
+                "Friday": 14
             }
         },
         "DOW_Avg_SLA_Breach_Rate": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "unique_count": 3,
+            "min": 0.07142857142857142,
+            "max": 0.14285714285714285,
+            "mean": 0.11999999999999997
         },
         "Record_SLA_Breach_Numeric": {
             "data_type": "int64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 2,
             "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "max": 1.0,
+            "mean": 0.12
         },
         "SLA_Breach_Vs_DOW_Norm": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "unique_count": 6,
+            "min": -0.1429,
+            "max": 0.9286,
+            "mean": -2.7755575615628915e-18
         },
         "Stat_Zscore_Anomaly": {
             "data_type": "bool",
@@ -595,7 +508,7 @@
             "unique_count": 2,
             "min": 0.0,
             "max": 1.0,
-            "mean": 0.01
+            "mean": 0.02
         },
         "Stat_IQR_Anomaly": {
             "data_type": "bool",
@@ -604,18 +517,16 @@
             "unique_count": 2,
             "min": 0.0,
             "max": 1.0,
-            "mean": 0.1
+            "mean": 0.02
         },
         "Stat_Anomaly_Fields": {
             "data_type": "object",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 4,
+            "unique_count": 2,
             "value_counts": {
-                "()": 90,
-                "('Processing_Latency_Days',)": 4,
-                "('Quantity_Dispensed',)": 4,
-                "('Quantity_Dispensed', 'Processing_Latency_Days')": 2
+                "()": 98,
+                "('Patient_Responsibility',)": 2
             }
         },
         "Stat_Is_Anomalous": {
@@ -625,7 +536,7 @@
             "unique_count": 2,
             "min": 0.0,
             "max": 1.0,
-            "mean": 0.1
+            "mean": 0.02
         },
         "ISO_Is_Anomaly": {
             "data_type": "bool",
@@ -634,70 +545,70 @@
             "unique_count": 2,
             "min": 0.0,
             "max": 1.0,
-            "mean": 0.23
+            "mean": 0.16
         },
         "ISO_Raw_Score": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 99,
-            "min": -0.3012399956984976,
-            "max": 0.12469756178152291,
-            "mean": 0.024643997331060454
+            "unique_count": 87,
+            "min": -0.1281663147628096,
+            "max": 0.0996089835532884,
+            "mean": 0.03629627563233778
         },
         "ISO_Severity_0to1": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 95,
+            "unique_count": 83,
             "min": 0.0,
             "max": 1.0,
-            "mean": 0.25452419955679184
+            "mean": 0.26251821730347985
         },
         "Correlation_Predicted_Paid": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 72.0,
-            "max": 72.0,
-            "mean": 72.0
+            "unique_count": 100,
+            "min": 536.0002508261877,
+            "max": 3196.1442065546225,
+            "mean": 1896.318
         },
         "Correlation_Residual": {
             "data_type": "float64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
-            "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "unique_count": 100,
+            "min": -14.049522875064895,
+            "max": 168.46952669381903,
+            "mean": 1.148237060988322e-13
         },
         "Correlation_Anomaly": {
             "data_type": "bool",
             "missing_count": 0,
             "missing_percentage": 0.0,
+            "unique_count": 2,
+            "min": 0.0,
+            "max": 1.0,
+            "mean": 0.02
+        },
+        "Quantity_Supply_Predicted": {
+            "data_type": "float64",
+            "missing_count": 65,
+            "missing_percentage": 65.0,
+            "unique_count": 1,
+            "min": 30.0,
+            "max": 30.0,
+            "mean": 30.0
+        },
+        "Quantity_Supply_Residual": {
+            "data_type": "float64",
+            "missing_count": 65,
+            "missing_percentage": 65.0,
             "unique_count": 1,
             "min": 0.0,
             "max": 0.0,
             "mean": 0.0
-        },
-        "Quantity_Supply_Predicted": {
-            "data_type": "float64",
-            "missing_count": 67,
-            "missing_percentage": 67.0,
-            "unique_count": 1,
-            "min": 10.484848484848484,
-            "max": 10.484848484848484,
-            "mean": 10.484848484848484
-        },
-        "Quantity_Supply_Residual": {
-            "data_type": "float64",
-            "missing_count": 67,
-            "missing_percentage": 67.0,
-            "unique_count": 15,
-            "min": -9.484848484848484,
-            "max": 25.515151515151516,
-            "mean": 4.306319610667274e-16
         },
         "Quantity_Supply_Anomaly": {
             "data_type": "bool",
@@ -712,19 +623,19 @@
             "data_type": "int64",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 2,
             "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "max": 1.0,
+            "mean": 0.02
         },
         "Correlation_Module_Is_Anomalous": {
             "data_type": "bool",
             "missing_count": 0,
             "missing_percentage": 0.0,
-            "unique_count": 1,
+            "unique_count": 2,
             "min": 0.0,
-            "max": 0.0,
-            "mean": 0.0
+            "max": 1.0,
+            "mean": 0.02
         }
     },
     "exact_duplicate_rows": 0,

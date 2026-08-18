@@ -37,20 +37,16 @@ export default function OverviewPage({ onNavigateToUploads }) {
   const totalRecords = currentRun?.total_records ?? statistics?.total_records ?? 0
   const dqScore = statistics?.overall_data_quality_score ?? 88.8
   const slaSummary = statistics?.sla_summary || null
-  const slaBreaches = slaSummary?.records_breached ?? anomalies.filter(a => {
-    const fr = a.full_record || {}
-    return fr.SLA_Breach === true || fr.sla_breach === true || fr.SLA_Status === 'BREACHED'
-  }).length
-  const slaAtRisk = slaSummary?.records_at_risk ?? 0
+  const notAssessableCount = slaSummary?.records_not_assessable ?? slaSummary?.not_assessable ?? 0
+  const slaAssessable = slaSummary?.records_assessable ?? (totalRecords - notAssessableCount)
+  const slaBreaches = slaSummary?.records_breached ?? slaSummary?.breached ?? 0
+  const slaAtRisk = slaSummary?.records_at_risk ?? slaSummary?.at_risk ?? 0
+  const withinSLA = slaSummary?.on_track ?? slaSummary?.records_normal ?? Math.max(0, slaAssessable - slaBreaches - slaAtRisk)
+  const complianceRate = slaAssessable > 0 ? ((withinSLA / slaAssessable) * 100).toFixed(1) : '100.0'
   const normalCount = Math.max(0, totalRecords - totalAnomalies)
   const highSev = sev.high || 0
   const medSev = sev.medium || 0
   const lowSev = sev.low || 0
-
-  // SLA Metrics
-  const slaAssessable = slaSummary?.records_assessable ?? (totalRecords - (slaSummary?.records_not_assessable ?? 0))
-  const withinSLA = Math.max(0, slaAssessable - slaBreaches)
-  const complianceRate = slaAssessable > 0 ? ((withinSLA / slaAssessable) * 100).toFixed(1) : '100.0'
 
   // --- Chart 1: Anomaly Severity Distribution Data ---
   const anomalySeverityChartData = [
@@ -61,8 +57,9 @@ export default function OverviewPage({ onNavigateToUploads }) {
 
   // --- Chart 2: SLA Compliance Donut Data ---
   const slaComplianceChartData = [
-    { label: 'Within SLA', value: withinSLA, color: '#16a34a' },
+    { label: 'Within SLA (Compliant)', value: withinSLA, color: '#16a34a' },
     { label: 'SLA Breached', value: slaBreaches, color: '#dc2626' },
+    { label: 'At Risk (Warning Latency)', value: slaAtRisk, color: '#f59e0b' },
   ]
 
   // --- Chart 3: Cross-Layer Findings Distribution Data ---

@@ -568,40 +568,52 @@ def get_run_statistics(db: Session, run_id: str) -> Dict[str, Any]:
     overall_quality_score = quality_summary.get("overall_quality_score")
     overall_risk_level = quality_summary.get("overall_risk_level")
 
-    # Compute SLA summary from the current run's DB records (not from the global file)
-    # This ensures counts always match the actual uploaded dataset size
-    if results:
-        sla_breached_count = 0
-        sla_at_risk_count = 0
-        sla_normal_count = 0
-        sla_not_assessable_count = 0
-        for r in results:
-            fr = r.full_record or {}
-            breach = fr.get("SLA_Breach") or fr.get("sla_breach")
-            status = fr.get("SLA_Status") or fr.get("sla_status", "")
-            risk = fr.get("SLA_Risk") or fr.get("sla_risk", "")
-            temporal = fr.get("Temporal_Validity") or fr.get("temporal_validity", "")
-            if temporal in ("NOT_ASSESSABLE", "NULL_NO_DATE", "NEGATIVE"):
-                sla_not_assessable_count += 1
-            elif breach is True or str(status).upper() == "BREACHED":
-                sla_breached_count += 1
-            elif str(risk).upper() in ("HIGH", "MEDIUM") or str(status).upper() == "AT_RISK":
-                sla_at_risk_count += 1
-            else:
-                sla_normal_count += 1
-        sla_total = run.total_records
-        sla_assessable = sla_total - sla_not_assessable_count
+    # Authoritative population SLA summary loaded from pipeline findings
+    raw_sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
+    
+    if raw_sla_summary:
+        on_track = raw_sla_summary.get("on_track", raw_sla_summary.get("records_normal", 0))
+        at_risk = raw_sla_summary.get("at_risk", raw_sla_summary.get("records_at_risk", 0))
+        breached = raw_sla_summary.get("breached", raw_sla_summary.get("records_breached", 0))
+        not_assessable = raw_sla_summary.get("not_assessable", raw_sla_summary.get("records_not_assessable", 0))
+        total_recs = raw_sla_summary.get("total_records", run.total_records)
+        assessable = raw_sla_summary.get("records_assessable", total_recs - not_assessable)
+        breach_breakdown = raw_sla_summary.get("breach_breakdown", {
+            "time_based": 0,
+            "service_payment_based": 0,
+            "pending_outcome": 0,
+        })
         sla_summary = {
-            "total_records": sla_total,
-            "records_assessable": sla_assessable,
-            "records_not_assessable": sla_not_assessable_count,
-            "records_breached": sla_breached_count,
-            "records_at_risk": sla_at_risk_count,
-            "records_normal": sla_normal_count,
+            "total_records": total_recs,
+            "records_assessable": assessable,
+            "records_not_assessable": not_assessable,
+            "records_breached": breached,
+            "records_at_risk": at_risk,
+            "records_normal": on_track,
+            "on_track": on_track,
+            "at_risk": at_risk,
+            "breached": breached,
+            "not_assessable": not_assessable,
+            "breach_breakdown": breach_breakdown,
         }
     else:
-        # Fallback: load from file only if no DB records exist for this run
-        sla_summary = _load_sla_summary(str(Path(__file__).resolve().parents[2] / "log" / "sla_temporal_findings.json"))
+        sla_summary = {
+            "total_records": run.total_records,
+            "records_assessable": run.total_records,
+            "records_not_assessable": 0,
+            "records_breached": 0,
+            "records_at_risk": 0,
+            "records_normal": run.total_records,
+            "on_track": run.total_records,
+            "at_risk": 0,
+            "breached": 0,
+            "not_assessable": 0,
+            "breach_breakdown": {
+                "time_based": 0,
+                "service_payment_based": 0,
+                "pending_outcome": 0,
+            },
+        }
 
     from services.processing_integrity import compute_processing_integrity
     integrity_data = compute_processing_integrity()
